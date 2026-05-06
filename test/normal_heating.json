@@ -1,0 +1,16 @@
+{
+  "scenario": "normal_heating",
+  "steps": [
+    { "t": 0,   "water_temp": 80, "target_temp": 85, "climate_status": "heating" },
+    { "t": 60,  "water_temp": 81 },
+    { "t": 120, "water_temp": 82 },
+    { "t": 180, "water_temp": 83 },
+    { "t": 240, "water_temp": 84 },
+    {
+      "t": 300,
+      "water_temp": 85,
+      "climate_status": "idle",
+      "expected": { "status": "ready", "esp": 0 }
+    }
+  ]
+}

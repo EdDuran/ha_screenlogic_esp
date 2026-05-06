@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pentair ScreenLogic ESP — Estimate to Set Point",
+        "description": "Automatically configures from your ScreenLogic integration"
+      }
+    },
+    "abort": {
+      "no_screenlogic": "No ScreenLogic integration found. Please configure ScreenLogic first.",
+      "already_configured": "ESP is already configured for your ScreenLogic device"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ESP Settings",
+        "data": {
+          "heater_kwh": "Heater power consumption (kWh)",
+          "energy_cost": "Energy cost per kWh ($)",
+          "currency": "Currency symbol"
+        }
+      }
+    }
+  },
+  "issues": {
+    "missing_screenlogic": {
+      "title": "ScreenLogic integration not found",
+      "description": "ESP requires the ScreenLogic integration to be configured. Please add the ScreenLogic integration and restart."
+    }
+  }
+}
