@@ -1,0 +1,9 @@
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.ha_screenlogic_esp: info
+    custom_components.ha_screenlogic_esp.estimator_refactor: debug
+    custom_components.ha_screenlogic_esp.state_machine: debug
+

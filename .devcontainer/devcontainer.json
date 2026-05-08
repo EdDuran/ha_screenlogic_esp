@@ -1,0 +1,23 @@
+{
+  "name": "Home Assistant Integration Dev",
+
+  "image": "ghcr.io/home-assistant/home-assistant:stable",
+
+  "workspaceFolder": "/workspaces/integration",
+
+  "forwardPorts": [8123],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+
+    "postCreateCommand": "bash .devcontainer/setup.sh"
+}
