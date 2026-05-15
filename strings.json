@@ -24,9 +24,9 @@
     }
   },
   "issues": {
-    "missing_screenlogic": {
-      "title": "ScreenLogic integration not found",
-      "description": "ESP requires the ScreenLogic integration to be configured. Please add the ScreenLogic integration and restart."
+    "missing_pool_adapter": {
+      "title": "Pool Adapter integration not found",
+      "description": "ESP requires a Pool Adapter integration to be configured. Add to configuration.yaml and restart."
     }
   }
 }

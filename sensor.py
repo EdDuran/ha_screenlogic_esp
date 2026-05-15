@@ -2,8 +2,9 @@ from ctypes import cast
 import logging
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.helpers.entity import DeviceInfo, HomeAssistant
+from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDeviceClass
+
 from .coordinator import ESPCoordinator
 from .util import *
 from .const import *
@@ -11,8 +12,10 @@ from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
-    coordinator = hass.data[ADDONS_COORDINATOR]
+async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_add_entities):
+
+    coordinator = hass.data[DOMAIN][config_entry.entry_id][ADDONS_COORDINATOR]
+
     sensors = [
         ESPSensor(coordinator, "pool"),
         ESPSensor(coordinator, "spa")
@@ -28,7 +31,7 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
 
         config = coordinator.get_config(body_type)
-        prefix = config.get(CONFIG_SCREENLOGIC_PREFIX)
+        prefix = config.get(POOL_PREFIX)
         self._body_type = body_type
         self._attr_unique_id = f"{prefix}_{body_type}"
         self._attr_name = f"{body_type.capitalize()} ESP"
@@ -77,8 +80,8 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
             "body"           : self._body_type,
             "status"         : context.status,
             "seconds"        : esp.seconds,
-            "confidence_num" : esp.confidence,
-            "confidence_str" : esp.confidence_label,
+            "confidence_pct" : esp.confidence_pct,
+            "confidence"     : esp.confidence_label,
             "water_temp"     : context.water_temp,
             "setpoint"       : context.target_temp,
             "air_temp"       : context.air_temp,
@@ -92,10 +95,10 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
         """Links this entity to the Pentair device."""
         #_LOGGER.info("ESPSensor.device_info")
 
-        config = self.coordinator.config
-        prefix = config[CONFIG_SCREENLOGIC_PREFIX]
-        identifiers = {(DOMAIN, config[CONFIG_SCREENLOGIC_ID])}
-        name = config[CONFIG_SCREENLOGIC_NAME]
+        adapter_config = self.coordinator.adapter_config
+        prefix = adapter_config[POOL_PREFIX]
+        identifiers = {(DOMAIN, adapter_config[POOL_ID])}
+        name = adapter_config[POOL_NAME]
         #_LOGGER.debug(f"...Identifier[{identifiers}] Name[{name}]")
 
         device_info = DeviceInfo(

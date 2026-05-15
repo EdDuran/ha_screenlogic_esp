@@ -3,6 +3,8 @@ from typing import Protocol
 import logging
 import asyncio
 
+import homeassistant
+
 _LOGGER = logging.getLogger(__name__)
 
 class Timer:
@@ -22,17 +24,17 @@ class Timer:
         timer.stop()
     """
 
-    def __init__(self, name: str, context: Context, callback: TimerCallback, cycles: int = 1, interval: int = 60):
-        self._hass = context.coordinator.hass
-        self._name = name
+    def __init__(self, name: str, hass:homeassistant, context, callback: TimerCallback, cycles: int = 1, interval: int = 60):
+        self._hass = hass
         self._context = context
+        self._name = name
         self._callback = callback
         self._cycles = cycles
         self._interval = interval
 
         self._running = False
         self._elapsed = 0
-        self._task_name = f"esp_timer_{name}_{context.body_type}"
+        self._task_name = f"esp_timer_{name}"
         self._task = None
 
     def __str__(self) -> str:
@@ -47,7 +49,7 @@ class Timer:
         return self._elapsed
 
     @property
-    def context(self) -> Context:
+    def context(self) -> int:
         return self._context
 
     ###

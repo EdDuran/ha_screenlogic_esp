@@ -6,242 +6,82 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import debugpy
+
+from .persistence import Persistence
 from .util import *
 from .coordinator import *
 
 _LOG = logging.getLogger(__name__)
 
+###
+### ----- Class LiveHistoryAdapter --------------------------------------------------
+###
 
-class ESPEstimator:
-    """
-    Estimates time-to-setpoint (ESP) for a pool/spa body of water.
+class LiveHistoryAdapter(HistoryAdapter):
+    def __init__(self, hass, body_type, coordinator:ESPCoordinator, config_entities):
+        self._hass = hass
+        self._body_type = body_type
+        self._coordinator = coordinator
+        self._config_entities = config_entities
+        self._starttime = None
+        self._endtime = None
+        self._context = coordinator.get_context(body_type)
+        _LOG.debug(f"LiveHistoryAdapter: initialized")
 
-    Fetches historical sensor data from Home Assistant's recorder,
-    builds a heating-rate table keyed by air-temperature bin, and
-    projects how long it will take the water to reach the target temp.
-    """
+    async def get_history(self):
+        self._history, self._starttime, self._endtime = await self._fetch_all_history()
+        return self._history, self._starttime, self._endtime
 
-    def __init__(self, coordinator: ESPCoordinator, body_type: str):
-        self.coordinator: ESPCoordinator = coordinator
-        self.body_type: str   = body_type
+    def get_current_value(self, body_config, screenlogic_entity:str):
+        """
+        Get the current value of a specific attribute from the context.
+        """
+        return self._context.get(screenlogic_entity.lower())
+    
+    @property
+    def now(self) -> float:
+        return time.time()
+    
+    @property
+    def starttime(self) -> str:
+        """
+        Get the history starttime.
+        """
+        return self._starttime
+    
+    @property
+    def endtime(self) -> str:
+        """
+        Get the history endtime.
+        """
+        return self._endtime
+    
+    @property
+    def body_type(self) -> str:
+        """
+        Get the body type.
+        """
+        return self._body_type
 
-        self.body_config = self.coordinator.get_config(body_type)
-        self.hass        = self.coordinator.hass
+
+    
+
+
 
     # -------------------------------------------------------------------------
-    # Public API
+    # History helper
     # -------------------------------------------------------------------------
 
-    async def calculate_wrapper(self, context) -> ESP:
-        """
-        Async wrapper around calculate_esp.
-        Returns: (days, hours, minutes, esp_seconds, formatted_esp)
-        """
-        try:
-            start = time.time()
-
-            esp: ESP = await self.calculate()
-
-            context.esp = esp
-            return esp
-
-        except Exception as e:
-            _LOG.error(traceback.format_exc())
-            _LOG.error(f"calculate_wrapper: Failed to Calculate ESP; {e}")
-            raise e
-
-    async def calculate(self) -> ESP:
-        """
-        Fetch history, build a min/deg rate table keyed by air-temp bin,
-        and estimate seconds until the water reaches the target temperature.
-
-        Works when the heater is OFF (hypothetical estimate).
-
-        Returns:
-            esp (int | None): total seconds to setpoint, or None if unavailable.
-        """
-        from homeassistant.components.recorder import get_instance
-
-        body_config = self.coordinator.get_config(self.body_type)
-        _LOG.info(f"Estimator.calculate: [{self.body_type}]")
-        #_LOG.debug(f"...body_config[{body_config}]")
-
-        config_entities = self.coordinator.get_config_entities(self.body_type)
-        #_LOG.debug(f"...ConfigEntities[{config_entities}]")
-
-        instance  = get_instance(self.hass)
-        starttime = time.time()
-        now       = datetime.now(timezone.utc)
-
-        # --- Fetch history ---------------------------------------------------
-        try:
-            history, start, end = await self._fetch_all_history(self.hass, config_entities)
-            await self._export_history_data(history, body_config, start, end)
-
-            water_history  = self._get_history_by_entity(WATER_TEMP,     self.body_type, history, body_config)
-            air_history    = self._get_history_by_entity(AIR_TEMP,       self.body_type, history, body_config)
-            heat_history   = self._get_history_by_entity(CLIMATE_STATUS, self.body_type, history, body_config)
-            target_history = self._get_history_by_entity(TARGET_TEMP,    self.body_type, history, body_config)
-
-            heat_states = self._parse_state_values(heat_history, CLIMATE_STATUS, body_config)
-            now_ts      = datetime.now(timezone.utc).timestamp()
-            intervals   = self._extract_heater_on_intervals(heat_states, now_ts)
-
-            detail = (
-                f"History Records WaterTemp={len(water_history)}, "
-                f"AirTemp={len(air_history)}, HeatStatus={len(heat_history)}, "
-                f"TargetTemp={len(target_history)}, Heat-On={len(intervals)}"
-            )
-            _LOG.debug(f"...calculate: [{self.body_type}] {detail}")
-
-        except Exception as e:
-            _LOG.error(f"calculate: Failed to retrieve History; {e}")
-            _LOG.error(traceback.format_exc())
-            raise ESPException("ERROR", "calculate: Failed to retrieve History") from e
-
-        if not water_history or not air_history or not heat_history:
-            _LOG.debug(
-                f"...No Data: Water[{len(water_history)}] "
-                f"Air[{len(air_history)}] Heat[{len(heat_history)}]"
-            )
-            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
-
-        water_temps = self._parse_state_values(water_history, WATER_TEMP, body_config)
-        air_temps   = self._parse_state_values(air_history, AIR_TEMP, body_config)
-        _LOG.debug(f"...HeatStates : {len(heat_states)} records")
-        _LOG.debug(f"...WaterTemps : {len(water_temps)} records")
-        _LOG.debug(f"...AirTemps   : {len(air_temps)} records")
-
-        MIN_RATE_DEG_PER_HOUR = 0.5  # must be rising at least 0.1°F/hour to count
-
-        # --- Build rate table ------------------------------------------------
-        try:
-            result = await instance.async_add_executor_job(
-                self._build_rate_table,
-                intervals, water_temps, air_temps,
-                AIR_TEMP_BIN_WIDTH, MIN_INTERVAL_MINUTES,
-                MIN_DEGREES_GAINED, MIN_RATE_DEG_PER_HOUR,
-            )
-
-            table            = result["table"]
-            used             = result["used"]
-            skipped_short    = result["skipped_short"]
-            skipped_no_rise  = result["skipped_no_rise"]
-            skipped_slow     = result["skipped_slow"]
-            skipped_no_water = result["skipped_no_water"]
-            skipped_no_air   = result["skipped_no_air"]
-
-        except Exception:
-            _LOG.error(traceback.format_exc())
-            raise ESPException("ERROR", "calculate: Failed to build rate table") from e
-
-        _LOG.debug(
-            f"...calculate: rate table built [{self.body_type}] — "
-            f"used={used} skipped(short={skipped_short}, no_rise={skipped_no_rise} "
-            f"slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
-        )
-
-        if not table:
-            detail = f"calculate: [{self.body_type}] No usable heating intervals yet — need more history"
-            _LOG.warning(f"calculate: [{self.body_type}] {detail}")
-            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
-
-        # --- Log rate table --------------------------------------------------
-        for bin_key in sorted(table.keys()):
-            samples = table[bin_key]
-            avg     = sum(samples) / len(samples)
-            sd      = (sum((x - avg) ** 2 for x in samples) / len(samples)) ** 0.5
-            sorted_s = sorted(samples)
-            n        = len(sorted_s)
-            mid      = n // 2
-            median   = sorted_s[mid] if n % 2 else (sorted_s[mid - 1] + sorted_s[mid]) / 2.0
-            _LOG.debug(
-                f"Rate Table: [{self.body_type}] Air {bin_key:3d}F-{(bin_key + AIR_TEMP_BIN_WIDTH):3d}F "
-                f"-> median={median:.2f} avg={avg:.2f} min/deg n={len(samples)} sd={sd:.2f}"
-            )
-
-        # --- Read current sensor values --------------------------------------
-        try:
-            if body_config:
-                current_water  = self.coordinator._get_current_value(body_config[WATER_TEMP])
-                current_air    = self.coordinator._get_current_value(body_config[AIR_TEMP])
-                current_target = self.coordinator._get_current_value(body_config[TARGET_TEMP])
-                heater_is_on   = (
-                    self.coordinator._get_current_value(body_config[CLIMATE_STATUS]).lower() == HEATER_STATUS_HEATING_VALUE.lower()
-                )
-            else:
-                _LOG.error(f"calculate: Failed to get BodyConfig[{self.body_type}]")
-        except (ValueError, TypeError) as e:
-            detail = f"calculate: {self.body_type} cannot read current sensors; {e}"
-            _LOG.error(f"calculate: {self.body_type} {detail}")
-            raise ESPException("ERROR", detail)
-
-        _LOG.debug(
-            f"...calculate: [{self.body_type}] "
-            f"WaterTemp[{current_water:.1f}F] TargetTemp[{current_target:.1f}F] "
-            f"AirTemp=[{current_air:.1f}F] IsHeaterActive[{heater_is_on}]"
-        )
-
-        # --- Weighted rate lookup --------------------------------------------
-        try:
-            target_bin = int(current_air // AIR_TEMP_BIN_WIDTH) * AIR_TEMP_BIN_WIDTH
-            rate, confidence = await instance.async_add_executor_job(
-                self._weighted_rate, table, target_bin, AIR_TEMP_BIN_WIDTH,
-            )
-        except Exception:
-            raise ESPException("ERROR", "calculate: Failed to calculate weighted rate and confidence")
-
-        if rate is None:
-            _LOG.warning(f"calculate: [{self.body_type}] rate is None")
-            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
-
-        # --- ESP calculation -------------------------------------------------
-        UNCERTAINTY_GAIN  = 0.5
-        degrees_remaining = current_target - current_water
-        if degrees_remaining == 0 and heater_is_on:
-            degrees_remaining = 1
-
-        base_esp          = rate * degrees_remaining
-        uncertainty_factor = 1.0 + (1.0 - confidence) * UNCERTAINTY_GAIN
-        base_esp = base_esp * uncertainty_factor
-        base_esp = round(base_esp / 5) * 5
-        seconds = base_esp * 60  # convert to seconds
-
-        _LOG.debug(
-            f"...calculate: [{self.body_type}] esp[{seconds:.1f}] "
-            f"Target[{current_target}] - Water[{current_water}] = Delta[{degrees_remaining}]"
-        )
-
-        heater_note = "ON" if heater_is_on else "OFF. Estimate if started now"
-
-        esp = ESP(seconds, confidence)
-
-        msg = (
-            f"{esp.display_label} to {int(current_target)}F"
-            f" water={round(current_water, 1)}F"
-            f" air={round(current_air)}F"
-            f" [heater {heater_note}]"
-        )
-
-        _LOG.debug(f"...ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f} {esp.confidence_label}]")
-        _LOG.debug(f"...calculate: [{self.body_type}] Complete: {msg}")
-        _LOG.debug(f"...calculate: [{self.body_type}] ESP Calculation took [{time.time() - starttime:.1f}s]")
-
-        return esp
-
-    # -------------------------------------------------------------------------
-    # History helpers
-    # -------------------------------------------------------------------------
-
-    async def _fetch_all_history(self, hass, config_entities):
+    async def _fetch_all_history(self):
         from homeassistant.components.recorder import get_instance
 
         end: datetime   = datetime.now(timezone.utc)
         start: datetime = end - timedelta(days=HISTORY_DAYS)
-        instance = get_instance(hass)
+        instance = get_instance(self._hass)
 
         history = await instance.async_add_executor_job(
-            self._fetch_history, hass, list(config_entities), start, end
+            self._fetch_history, self._hass, list(self._config_entities), start, end
         )
 
         return history, start, end
@@ -267,12 +107,240 @@ class ESPEstimator:
 
         return result if result else {s: [] for s in entity_ids}
 
-    @staticmethod
-    def _get_history_by_entity(metadata: str, body_type: str, all_history, body_config):
+###
+### ----- Class ESPEstimator --------------------------------------------------
+###
+
+class ESPEstimator:
+    """
+    Estimates time-to-setpoint (ESP) for a pool/spa body of water.
+
+    Fetches historical sensor data from Home Assistant's recorder,
+    builds a heating-rate table keyed by air-temperature bin, and
+    projects how long it will take the water to reach the target temp.
+    """
+
+    def __init__(self, coordinator: ESPCoordinator, body_type: str):
+        self._coordinator: ESPCoordinator = coordinator
+        self._body_type: str = body_type
+
+        self._body_config:Config       = self._coordinator.get_config(body_type)
+        self._config_entities:set[str] = self._coordinator.get_config_entities(body_type)
+        self._hass:HomeAssistant       = self._coordinator.hass
+
+    # -------------------------------------------------------------------------
+    # Public API
+    # -------------------------------------------------------------------------
+
+    async def calculate_wrapper(self, context) -> ESP:
+        """
+        Async wrapper around calculate_esp.
+        Returns: (days, hours, minutes, esp_seconds, formatted_esp)
+        """
+        try:
+            #_LOG.debug(f"...ConfigEntities[{self._config_entities}]")
+
+            if context.history_adapter is None:
+                context.history_adapter = LiveHistoryAdapter(self._hass, context.body_type, self._coordinator, self._config_entities)
+
+            esp: ESP = await self.calculate(context.export,context.history_adapter)
+
+            context.esp = esp
+            return esp
+
+        except Exception as e:
+            _LOG.error(traceback.format_exc())
+            _LOG.error(f"calculate_wrapper: Failed to Calculate ESP; {e}")
+            raise e
+
+    async def calculate(self, export:bool, history_adapter:HistoryAdapter) -> ESP:
+        """
+        Fetch history, build a min/deg rate table keyed by air-temp bin,
+        and estimate seconds until the water reaches the target temperature.
+
+        Works when the heater is OFF (hypothetical estimate).
+
+        Returns:
+            esp (int | None): total seconds to setpoint, or None if unavailable.
+        """
+        from homeassistant.components.recorder import get_instance
+
+        body_config = self._coordinator.get_config(self._body_type)
+        _LOG.info(f"calculate: [{self._body_type}]")
+
+        instance  = get_instance(self._hass)
+        execution_starttime = time.time()
+
+        # --- Fetch history ---------------------------------------------------
+        try:
+            history, start, end = await history_adapter.get_history()
+            now_ts= history_adapter.now
+            _LOG.debug(f"...HistoryAdapter; Now: [{now_ts} / {datetime.fromtimestamp(now_ts).strftime('%Y-%m-%d %H:%M:%S')}]")
+
+            ###
+            ### Export history data
+            ###
+            if export:    # Context Export Flag set?
+                await self._export_history_data(history, body_config, start, end)
+
+            water_history  = self._get_history_by_entity(WATER_TEMP,     self._body_type, history, body_config)
+            air_history    = self._get_history_by_entity(AIR_TEMP,       self._body_type, history, body_config)
+            heat_history   = self._get_history_by_entity(CLIMATE_STATUS, self._body_type, history, body_config)
+            target_history = self._get_history_by_entity(TARGET_TEMP,    self._body_type, history, body_config)
+
+            heat_states = self._parse_state_values(heat_history, CLIMATE_STATUS, body_config)
+            heating_intervals   = self._extract_heater_on_intervals(heat_states, now_ts)
+
+            _LOG.debug(f"...History: Air[{len(air_history)}] Water[{len(water_history)}] Target[{len(target_history)}] HeatStatus[{len(heat_history)}] HeatingIntervals[{len(heating_intervals)}]")
+        except Exception as e:
+            _LOG.error(f"calculate: Failed to retrieve History; {e}")
+            _LOG.error(traceback.format_exc())
+            raise ESPException("ERROR", "calculate: Failed to retrieve History") from e
+
+        if not water_history or not air_history or not heat_history:
+            _LOG.warning(f"...No Data: Air[{len(air_history)}] Water[{len(water_history)}] HeatStatus[{len(heat_history)}]")
+            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
+
+        water_temps = self._parse_state_values(water_history, WATER_TEMP, body_config)
+        air_temps   = self._parse_state_values(air_history, AIR_TEMP, body_config)
+
+        MIN_RATE_DEG_PER_HOUR = 0.5  # must be rising at least 0.1°F/hour to count
+
+        # --- Build rate table ------------------------------------------------
+        try:
+            result = await instance.async_add_executor_job(
+                self._build_rate_table,
+                heating_intervals, water_temps, air_temps,
+                AIR_TEMP_BIN_WIDTH,
+                MIN_INTERVAL_MINUTES,
+                MIN_DEGREES_GAINED,
+                MIN_RATE_DEG_PER_HOUR,
+            )
+
+            table            = result["table"]
+            used             = result["used"]
+
+            persistence = Persistence(self._hass, self._body_type)
+            await persistence.async_load()
+            if export: ## export means running live data, so merge results
+                await persistence.merge_and_save(result["table"], result["used"])
+
+            table = persistence.get_rate_table()
+
+            skipped_short    = result["skipped_short"]
+            skipped_no_rise  = result["skipped_no_rise"]
+            skipped_slow     = result["skipped_slow"]
+            skipped_no_water = result["skipped_no_water"]
+            skipped_no_air   = result["skipped_no_air"]
+
+        except Exception:
+            _LOG.error(traceback.format_exc())
+            raise ESPException("ERROR", "calculate: Failed to build rate table") from e
+
+        _LOG.debug(
+            f"...calculate: rate table built [{self._body_type}] — used={used} skipped(short={skipped_short}, no_rise={skipped_no_rise} slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
+        )
+
+        ##debugpy.breakpoint()
+        
+        if not table:
+            detail = f"calculate: [{self._body_type}] No usable heating intervals yet — need more history"
+            _LOG.warning(f"calculate: [{self._body_type}] {detail}")
+            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
+
+        # --- Log rate table --------------------------------------------------
+        for bin_key in sorted(table.keys()):
+            samples = table[bin_key]
+            avg     = sum(samples) / len(samples)
+            sd      = (sum((x - avg) ** 2 for x in samples) / len(samples)) ** 0.5
+            sorted_s = sorted(samples)
+            n        = len(sorted_s)
+            mid      = n // 2
+            median   = sorted_s[mid] if n % 2 else (sorted_s[mid - 1] + sorted_s[mid]) / 2.0
+            _LOG.debug(
+                f"Rate Table:[{self._body_type}] [{bin_key:3d}F -{(bin_key + AIR_TEMP_BIN_WIDTH):3d}F] -> median[{median:5.2f}] avg[{avg:5.2f} min/deg] n[{len(samples):2d}] sd[{sd:.2f}]"
+            )
+
+        # --- Read current sensor values --------------------------------------
+        try:
+            if body_config:
+                current_water  = history_adapter.get_current_value(body_config, WATER_TEMP)
+                current_air    = history_adapter.get_current_value(body_config, AIR_TEMP)
+                current_target = history_adapter.get_current_value(body_config, TARGET_TEMP)
+                heater_status  = history_adapter.get_current_value(body_config, CLIMATE_STATUS)
+                if (current_water is None or current_air is None or current_target is None or heater_status is None):
+                    _LOG.error(f"calculate: [{self._body_type}] Failed to get all current sensor values")
+                    raise ESPException("ERROR", f"calculate: [{self._body_type}] Failed to get all current sensor values")
+                
+                heater_is_on   = heater_status.lower() == HEATER_STATUS_HEATING_VALUE.lower()
+            else:
+                _LOG.error(f"calculate: Failed to get BodyConfig[{self._body_type}]")
+        except (ValueError, TypeError) as e:
+            detail = f"calculate: {self._body_type} cannot read current sensors; {e}"
+            _LOG.error(f"calculate: {self._body_type} {detail}")
+            raise ESPException("ERROR", detail)
+
+        _LOG.debug(
+            f"...calculate: [{self._body_type}] "
+            f"WaterTemp[{current_water:.1f}F] TargetTemp[{current_target:.1f}F] "
+            f"AirTemp=[{current_air:.1f}F] IsHeaterActive[{heater_is_on}]"
+        )
+
+        # --- Weighted rate lookup --------------------------------------------
+        try:
+            target_bin = int(current_air // AIR_TEMP_BIN_WIDTH) * AIR_TEMP_BIN_WIDTH
+            rate, confidence = await instance.async_add_executor_job(
+                self._weighted_rate, table, target_bin, AIR_TEMP_BIN_WIDTH,
+            )
+        except Exception:
+            raise ESPException("ERROR", "calculate: Failed to calculate weighted rate and confidence")
+
+        if rate is None:
+            _LOG.warning(f"calculate: [{self._body_type}] rate is None")
+            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
+
+        # --- ESP calculation -------------------------------------------------
+        UNCERTAINTY_GAIN  = 0.5
+        degrees_remaining = current_target - current_water
+        if degrees_remaining == 0 and heater_is_on:
+            degrees_remaining = 1
+
+        base_esp          = rate * degrees_remaining
+        uncertainty_factor = 1.0 + (1.0 - confidence) * UNCERTAINTY_GAIN
+        base_esp = base_esp * uncertainty_factor
+        base_esp = round(base_esp / 5) * 5
+        seconds = base_esp * 60  # convert to seconds
+
+        _LOG.debug(
+            f"...calculate: [{self._body_type}] esp[{seconds:.1f}] "
+            f"Target[{current_target}] - Water[{current_water}] = Delta[{degrees_remaining}]"
+        )
+
+        heater_note = "ON" if heater_is_on else "OFF. Estimate if started now"
+
+        esp = ESP(seconds, confidence)
+
+        msg = (
+            f"{esp.display_label} to {int(current_target)}F"
+            f" water={round(current_water, 1)}F"
+            f" air={round(current_air)}F"
+            f" [heater {heater_note}]"
+        )
+
+        execution_endtime = time.time()
+        execution_duration = execution_endtime - execution_starttime
+
+        _LOG.debug(f"...ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f} {esp.confidence_label}]")
+        _LOG.debug(f"...calculate: [{self._body_type}] Complete: {msg}")
+        _LOG.debug(f"...calculate: [{self._body_type}] ESP Calculation took [{execution_duration:.1f}s]")
+
+        return esp
+
+
+    def _get_history_by_entity(self, metadata:str, body_type:str, all_history, body_config: dict[str, EntityCombo]):
         """Return the raw state list for a single entity identified by metadata key."""
         entity_combo = body_config.get(metadata)
-        _, entity_id, _, _ = parse_entity_combo(entity_combo)
-        return all_history.get(entity_id)
+        return all_history.get(entity_combo.id)
 
     async def _export_history_data(self, history, body_config, start, end):
         """Serialize and write history to a JSON debug file (non-blocking)."""
@@ -297,7 +365,7 @@ class ESPEstimator:
         export_data = {
             "metadata": {
                 "exported_at": now.isoformat(),
-                "body_type":   self.body_type,
+                "body_type":   self._body_type,
                 "start":       start,
                 "end":         end,
                 "hours":       hours,
@@ -315,8 +383,8 @@ class ESPEstimator:
             return path
 
         try:
-            output_file = f"/config/esp_test_{self.body_type}_{now.isoformat()}.json"
-            written = await self.hass.async_add_executor_job(write_json, output_file, export_data)
+            output_file = f"/config/esp_test_{self._body_type}_{now.isoformat()}.json"
+            written = await self._hass.async_add_executor_job(write_json, output_file, export_data)
             _LOG.debug(f"Exported History to [{written}]")
         except Exception:
             _LOG.error(traceback.format_exc())
@@ -325,40 +393,37 @@ class ESPEstimator:
     # State parsing
     # -------------------------------------------------------------------------
 
-    @staticmethod
-    def _parse_state_value(raw_state, entity_combo: str):
+    def _parse_state_value(self, raw_state, entity_combo:EntityCombo):
         """Parse a single state object into (timestamp, float|str)."""
         ts    = None
         value = None
-        entity_type, entity_id, entity_attr, _ = parse_entity_combo(entity_combo)
 
         if raw_state:
             try:
-                value = raw_state.attributes.get(entity_attr) if entity_attr else raw_state.state
+                value = raw_state.attributes.get(entity_combo.attribute) if entity_combo.attribute else raw_state.state
                 if value is not None and value not in ("unavailable", "unknown"):
-                    value = float(value) if entity_type == "float" else value
+                    value = float(value) if entity_combo.datatype == "float" else value
                     ts    = raw_state.last_updated.timestamp()
             except (ValueError, TypeError, AttributeError) as e:
                 _LOG.error(f"_parse_state_value({entity_combo}): {e}")
 
         return ts, value
 
-    @staticmethod
-    def _parse_state_values(raw_states: list, metadata: str, body_config) -> list[tuple]:
+    def _parse_state_values(self, raw_states: list, metadata: str, body_config: dict[str, EntityCombo]) -> list[tuple]:
         """Parse a list of state objects into [(timestamp, float|str), ...]."""
         results     = []
         entity_combo = body_config.get(metadata)
-        entity_type, _, entity_attr, _ = parse_entity_combo(entity_combo)
 
         if raw_states:
             for state in raw_states:
                 try:
-                    value = state.attributes.get(entity_attr) if entity_attr else state.state
+                    value = state.attributes.get(entity_combo.attribute) if entity_combo.attribute else state.state
                     if value is not None and value not in ("unavailable", "unknown"):
                         ts    = state.last_updated.timestamp()
-                        value = float(value) if entity_type == "float" else value
+                        value = float(value) if entity_combo.datatype == "float" else value
                         results.append((ts, value))
-                except (ValueError, TypeError, AttributeError):
+                except (ValueError, TypeError, AttributeError) as e:
+                    #_LOG.error(f"_parse_state_values: State: {state}; {e}")
                     pass  # silently ignore unparseable states
 
         return results
@@ -367,8 +432,7 @@ class ESPEstimator:
     # Interval extraction
     # -------------------------------------------------------------------------
 
-    @staticmethod
-    def _extract_heater_on_intervals(heat_states, now_ts=None):
+    def _extract_heater_on_intervals(self, heat_states, now_ts=None):
         """
         Scan heat_states for heating ON/OFF transitions.
         Returns a list of (on_start_ts, off_ts) tuples.
@@ -379,22 +443,29 @@ class ESPEstimator:
         on_start  = None
 
         for ts, heat_state in heat_states:
-            is_on = heat_state == HEATER_STATUS_HEATING_VALUE
+            # Skip None/unavailable states — treat as continuation of previous state
+            if heat_state is None or heat_state in ("unavailable", "unknown"):
+                _LOG.warning(f"...Skipping None/unavailable state at [{ts}]")
+                continue
+        
+            is_on = heat_state.lower() == HEATER_STATUS_HEATING_VALUE.lower()
+
             if is_on and on_start is None:
                 on_start = ts
             elif not is_on and on_start is not None:
                 intervals.append((on_start, ts))
                 on_start = None
 
+        # Close open interval at now if heater still on
         if on_start is not None and now_ts is not None:
             intervals.append((on_start, now_ts))
-            _LOG.debug("...ExtractHeaterOnIntervals: heater still ON, closing interval at now")
+            _LOG.debug("...End of intervals and heater is still ON, closing interval at now")
 
         for start_ts, end_ts in intervals:
             duration_min = (end_ts - start_ts) / 60.0
             dt = datetime.fromtimestamp(start_ts)
             time = dt.strftime('%Y-%m-%d %H:%M:%S')
-            _LOG.debug(f"   start={start_ts:.0f}/{time} duration={duration_min:.1f} min")
+            _LOG.debug(f"...start={start_ts:.0f}/{time} duration={duration_min:.1f} min")
 
         return intervals
 
@@ -557,7 +628,8 @@ class ESPEstimator:
     def _trim_samples(samples: list) -> list:
         """Drop the bottom 10% and top 20% of samples to reduce outlier influence."""
         if len(samples) < 5:
-            return samples
+            return samples      # Not enough samples to trim
+        
         s     = sorted(samples)
         n     = len(s)
         lower = int(n * 0.1)
@@ -591,42 +663,65 @@ class ESPEstimator:
 
         for bin_key, samples in table.items():
             if not samples:
-                _LOG.debug(f"...not enough samples at [{bin_key}]")
+                _LOG.debug(f"...[{bin_key}] not any samples")
                 continue
 
             clean = self._trim_samples(samples)
+            #
+            #
+            #
             if len(clean) < 3:
-                _LOG.debug(f"...len(clean) < 3 at [{bin_key}]")
+                clean = samples
+
+            distance        = abs(bin_key - target_bin) / bin_width
+            distance_weight = 1.0 / (1.0 + distance)
+            #
+            #
+            #
+            # Single sample — use directly with low confidence
+            if len(clean) == 1:
+                med    = clean[0]
+                weight = SINGLE_SAMPLE_SCORE * distance_weight
+                _LOG.debug(f"...[{bin_key}] single sample med={med:.2f} weight={weight:.2f} (low confidence)"
+                )
+                weighted_sum += med * weight
+                total_weight += weight
                 continue
-            if len(samples) == 1:
-                _LOG.debug(f"...len(samples) == 1 at [{bin_key}]")
+            #
+            #
+            #
+            if len(clean) < 2:  # absolute minimum
+                _LOG.debug(f"...[{bin_key}] only {len(samples)} raw samples (need 2+), skipping")
                 continue
 
             score = self.score_bin(clean)
             if score == 0:
-                _LOG.debug(f"...score_bin == 0 at [{bin_key}]")
+                _LOG.debug(f"...[{bin_key}] score_bin == 0, skipping")
                 continue
 
             avg = sum(clean) / len(clean)
             sd  = (sum((x - avg) ** 2 for x in clean) / len(clean)) ** 0.5
 
             if avg > 0 and (sd / avg) > 0.5:
-                _LOG.debug(f"...avg > 0 and (sd / avg) > 0.5 at [{bin_key}]")
+                _LOG.debug(f"...[{bin_key}] high variance (sd/avg={sd/avg:.2f}), skipping")
                 continue
 
             med             = self._median(clean)
-            distance        = abs(bin_key - target_bin) / bin_width
-            distance_weight = 1.0 / (1.0 + distance)
             weight          = score * distance_weight
+
+            _LOG.debug(f"...[{bin_key}] med={med:.2f} score={score:.2f} distance={distance:.1f} weight={weight:.2f}")
 
             weighted_sum += med * weight
             total_weight += weight
+        # end for each table.item
 
         if total_weight == 0:
-            return None, 0.0
-
-        rate       = weighted_sum / total_weight
-        confidence = round(min(total_weight / 2.0, 1.0), 2)
+            rate       = None
+            confidence = 0.0
+        else:
+            rate       = weighted_sum / total_weight
+            confidence = round(min(total_weight / 2.0, 1.0), 2)
 
         _LOG.debug(f"...Weighted Rate[{rate}] total_weight[{total_weight}] confidence[{confidence}]")
+
         return rate, confidence

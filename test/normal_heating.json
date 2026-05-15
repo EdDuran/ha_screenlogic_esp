@@ -1,16 +1,24 @@
 {
   "scenario": "normal_heating",
   "steps": [
-    { "t": 0,   "water_temp": 80, "target_temp": 85, "climate_status": "heating" },
+    { "t": 0,   "circuit": "on", "air_temp": 83, "water_temp": 80, "target_temp": 85, "climate_mode":"heat", "climate_status": "heating" },
     { "t": 60,  "water_temp": 81 },
     { "t": 120, "water_temp": 82 },
     { "t": 180, "water_temp": 83 },
-    { "t": 240, "water_temp": 84 },
+    { "t": 240, "water_temp": 84,
+      "expected": { "status": "0:20", "esp": {"seconds": 1200, "confidence": 0.2} }
+    },
     {
-      "t": 300,
-      "water_temp": 85,
-      "climate_status": "idle",
-      "expected": { "status": "ready", "esp": 0 }
+      "t": 300, "water_temp": 85,  "climate_status": "idle",
+      "expected": {
+        "status": "Ready",
+        "esp": {
+          "seconds": 0,
+          "confidence": 0.0,
+          "tolerance_seconds": 60,
+          "tolerance_confidence": 0.05
+        }
+      }
     }
   ]
 }

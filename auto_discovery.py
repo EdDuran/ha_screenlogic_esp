@@ -52,10 +52,10 @@ def auto_discovery(hass) -> dict:
 
     config = { }
 
-    config[CONFIG_SCREENLOGIC_NAME] = name
-    config[CONFIG_SCREENLOGIC_MODEL] = model
-    config[CONFIG_SCREENLOGIC_PREFIX] = prefix
-    config[CONFIG_SCREENLOGIC_ID] = id
+    config[POOL_NAME] = name
+    config[POOL_MODEL] = model
+    config[POOL_PREFIX] = prefix
+    config[POOL_ID] = id
 
     _LOGGER.info(f"AutoDiscovery: Discovered ScreenLogic Device: {prefix}")
 

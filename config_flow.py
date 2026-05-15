@@ -1,3 +1,4 @@
+from dataclasses_json import config
 from homeassistant import config_entries
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -23,6 +24,8 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, info=None):
         """Called when user adds integration from UI."""
         _LOGGER.info(f"CONFIG_FLOW: async_setup_user Info:[{info}]")
+
+        adapter_name = config.get("adapter", "ScreenlogicAdapter")
 
         #
         # Auto-discover ScreenLogic device

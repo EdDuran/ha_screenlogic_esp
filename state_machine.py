@@ -32,7 +32,7 @@ async def esp_state_machine(context:Context, cause:str = "Unknown"):
         body_type = context.body_type
         # Get Current State Machine State
         current_state = context.machine_state
-        _LOG.info(f"StateMachine: Begin at [{current_state}] [{body_type}] because[{cause}]")
+        _LOG.info(f"StateMachine: Cause[{cause}] State[{current_state}]")
 
         #
         # Execute State Machine - Until SM_EXIT is returned
@@ -64,7 +64,7 @@ async def esp_state_machine(context:Context, cause:str = "Unknown"):
                         if next_state is None:
                             raise ESPException("ERROR", f"StateMachine: Failed to find TransitionState: State[{current_transitions}] Result[{result}]")
                     
-                    _LOG.debug(f"...Result[{result}] --> NextState[{next_state}]")
+                    _LOG.debug(f"   == [{result}] --> NextState[{next_state}]")
                 
                 except Exception as e:
                     _LOG.error(f"StateMachine: Failed to execute State [{current_state}]; {e}")
@@ -145,7 +145,7 @@ async def _brick_off(context: Context) -> str:
 #
 # Return: ESP Result
 #
-async def _brick_enabled(context: Context) -> str:
+async def _brick_enabled(context:Context) -> str:
     result = context.get_esp_result()
 
     context.status = STATUS_ENABLED
@@ -154,7 +154,7 @@ async def _brick_enabled(context: Context) -> str:
     return result
 
 
-def _countdown_timer_cycle(context, cycle):
+def _countdown_timer_cycle(context:Context, cycle):
     """
     Countdown Timer (callback)
     Called every TIMER_FIVE_MINUTES to decrement the ESP value
@@ -178,7 +178,7 @@ def _countdown_timer_cycle(context, cycle):
                 # if new_esp > 0
             else:
                 # State off - turn off Timer
-                stop_duration_timer(context)
+                context.timer.stop()
             # end if machine_state not None
         else:
             # esp is None
@@ -194,7 +194,7 @@ def _countdown_timer_cycle(context, cycle):
 #
 # Return: ESP Result
 #
-async def _brick_heating(context: Context) -> str:
+async def _brick_heating(context:Context) -> str:
     from .estimator_refactor import ESPEstimator, ESP
 
     result = context.get_esp_result()
@@ -297,17 +297,21 @@ async def _brick_disabled(context: Context) -> str:
 #
 # ----- Brick Sensing
 #
-async def _brick_sensing(context: Context) -> str:
+async def _brick_sensing(context:Context) -> str:
     """Sensing state — suppress STANDBY until settle timer expires"""
     import time
 
-    result = context.get_esp_result() # context.get_esp_result()(context)
+    result = context.get_esp_result()
     _LOG.debug(f"..._brick_sensing: ESP Result is [{result}]")
 
-    timer = context.timer
+    is_testing = context.testing
+    if is_testing:
+        _LOG.debug(f"..._brick_sensing: Testing mode is enabled, skipping sensing")
+        return result
 
     try:
-        #
+        timer = context.timer
+
         # ACTIVE or STANDBY - run the timer
         #
         if result in [RESULT_ACTIVE, RESULT_STANDBY]:
@@ -315,16 +319,19 @@ async def _brick_sensing(context: Context) -> str:
                 #
                 # Start Timer - return STANDBY
                 #
-                context.status = f"{STATUS_SENSING}" 
-                context.esp = ESP(0, 0)
                 timer = Timer(
-                    name = "Sensing",
+                    name = f"Sensing [{context.body_type}]",
+                    hass = context.hass,
                     context = context,
                     callback = SensingCallback(),
                     cycles = TIMER_SENSING / 5,
                     interval = 5
                 )
+
                 context.timer = timer
+                context.status = f"{STATUS_SENSING}" 
+                context.esp = ESP(0, 0)
+
                 timer.start()
                 result = RESULT_STANDBY # Waiting for Timer to complete
             else: # Timer already created
@@ -343,13 +350,16 @@ async def _brick_sensing(context: Context) -> str:
         context.timer = timer
 
     except Exception as e:
-        _LOG.error(f"_brick_sensing: Failed to execute: {e}")
-        result = RESULT_OFF
+        raise ESPException("ERROR", f"Failed to execute Brick Sensing") from e
 
     #
     # STANDBY if waiting for Sensing Timer to complete
     # ACTIVE, OFF if Timer has completed
     return result
+
+###
+### ----- Class SensingCallback --------------------------------------------
+###
 
 class SensingCallback(TimerCallback):
     """
@@ -358,17 +368,19 @@ class SensingCallback(TimerCallback):
     ###
     ### ----- on_timer_cycle
     ###
-    async def on_timer_cycle(self, timer: Timer, elapsed: int, remaining: int) -> None:
+    async def on_timer_cycle(self, timer:Timer, elapsed:int, remaining:int) -> None:
         """
         Sensing Timer has completed one Cycle
         """
-        _LOG.info(f"SensingCallback.on_timer_cycle: {timer}, Elapsed[{elapsed}], Remaining[{remaining}]")
         # Check if still Counting Down
-        context = timer.context
+        context:Context = timer.context
         if context.timer and remaining >= 0:
             body_type = context.body_type
-            _LOG.debug(f"...[{body_type}] Cycle[{remaining * 5}]")
-            context.esp = ESP(remaining, 0)
+            seconds_remaining = remaining * 5
+            _LOG.debug(f"...[{body_type}] Cycle[{seconds_remaining}]")
+            context.esp = ESP(seconds_remaining, 0)
+
+            _LOG.info(f"SensingCallback.on_timer_cycle: {timer}, Seconds remaining[{seconds_remaining}]")
 
             await context.coordinator.async_request_refresh()
             ### TODO update ESP Entity Value
@@ -384,7 +396,7 @@ class SensingCallback(TimerCallback):
         """
         _LOG.info(f"SensingCallback.on_timer_complete: {timer}")
 
-        context = timer.context
+        context:Context = timer.context
         body_type = context.body_type
         current_state = context.machine_state
 

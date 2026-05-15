@@ -24,9 +24,13 @@ MIN_SAMPLES          = 3       # minimum samples per bin before trusting estimat
 HISTORY_DAYS         = 31      # days of recorder history to analyse
 MIN_INTERVAL_MINUTES = 2       # ignore heater-on intervals shorter than this
 MIN_DEGREES_GAINED   = 0.25    # ignore intervals with negligible temp rise
+SINGLE_SAMPLE_SCORE  = 0.25    # score for a single sample
+MAX_SAMPLES_PER_BIN  = 20
+MAX_RATE_AGE_DAYS    = 365     # keep a full year of learning
+STORAGE_VERSION      = 1
 
 # Sensor settle time when entering Sensing state (mirrors SensingBrick timer)
-TIMER_SENSING  = 30 # DEBUG 120
+TIMER_SENSING  = 120
 TIMER_FIVE_MINUTES = 5 * 60     # Five Minutes in Seconds
 
 ### ScreenLogic Climate Entity Attributes
@@ -58,11 +62,17 @@ CONTEXT_CLIMATE_MODE        = "climate_mode"    # Heating Mode (off, heat)
 CONTEXT_CIRCUIT             = "circuit"         # Circuit (on, off)
 CONTEXT_TIMER               = "timer"           # Timer (Sensing, Countdown)
 CONTEXT_COORDINATOR         = "coordinator"     # Coordinator
+CONTEXT_HISTORY_ADAPTER     = "history_adapter" # History Adapter
+CONTEXT_HASS                = "hass"            # Home Assistant instance
+CONTEXT_TESTING             = "testing"         # Testing mode
+CONTEXT_EXPORT              = "export"          # Export data
 
-CONFIG_SCREENLOGIC_PREFIX   = "screenlogic_prefix"
-CONFIG_SCREENLOGIC_MODEL    = "screenlogic_model"
-CONFIG_SCREENLOGIC_NAME     = "screenlogic_name"
-CONFIG_SCREENLOGIC_ID       = "screenlogic_id"
+POOL_ADAPTER_CONFIG = "adapter"
+DEFAULT_POOL_ADAPTER = "screenlogic_adapter"
+POOL_PREFIX   = "pool_prefix"
+POOL_MODEL    = "pool_model"
+POOL_NAME     = "pool_name"
+POOL_ID       = "pool_id"
 
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"

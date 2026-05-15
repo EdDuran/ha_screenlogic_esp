@@ -1,6 +1,9 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.defaultInterpreterPath": "/usr/local/bin/python3",
     "python.analysis.extraPaths": [
-        "/Users/kroberts/git/ha_core" 
-    ]
+        "/usr/src/homeassistant",
+        "/usr/local/lib/python3.14/site-packages"
+    ],
+    "git.ignoreLimitWarning": true,
+    "python.analysis.typeCheckingMode": "off"
 }

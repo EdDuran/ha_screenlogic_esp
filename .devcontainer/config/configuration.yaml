@@ -7,3 +7,6 @@ logger:
     custom_components.ha_screenlogic_esp.estimator_refactor: debug
     custom_components.ha_screenlogic_esp.state_machine: debug
 
+homeassistant:
+  time_zone: America/New_York
+
