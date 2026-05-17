@@ -1,9 +1,16 @@
+import voluptuous as vol
+import logging
+
 from dataclasses_json import config
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from .const import DOMAIN
-import logging
+from homeassistant import config_entries
+
+from .panel import register_panel, unregister_panel
+from .const import DOMAIN, CONF_SHOW_PANEL
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +26,38 @@ async def _find_screenlogic_device(hass):
                 return device
     return None
 
+class ESPOptionsFlow(config_entries.OptionsFlow):
+
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            if user_input.get(CONF_SHOW_PANEL):
+                register_panel(self.hass)
+            else:
+                unregister_panel(self.hass)
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id   = "init",
+            data_schema = vol.Schema({
+                vol.Optional(
+                    CONF_SHOW_PANEL,
+                    default = self.config_entry.options.get(CONF_SHOW_PANEL, False)
+                ): bool
+            }),
+            description_placeholders = {
+                "info": "Enable to show ESP Rate Table viewer in the HA sidebar"
+            }
+        )
+
+
 class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return ESPOptionsFlow()
+    
 
     async def async_step_user(self, info=None):
         """Called when user adds integration from UI."""

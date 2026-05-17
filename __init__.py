@@ -6,7 +6,12 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import device_registry as dr
+from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.frontend import async_register_built_in_panel, async_remove_panel
 
+
+from .panel import register_panel, unregister_panel
+from .persistence import Persistence
 from .coordinator import ESPCoordinator
 from .const import (
     DOMAIN,
@@ -23,6 +28,34 @@ import debugpy
 import os
 
 _LOG = logging.getLogger(__name__)
+
+class ESPRatesView(HomeAssistantView):
+    """
+    View to get/set ESP rates data. This is used by the panel to persist rates data,
+    which is not stored in the Coordinator and thus not persisted across restarts by default.
+    """
+    url = "/api/ha_screenlogic_esp/rates"
+    name = "api:ha_screenlogic_esp:rates"
+    requires_auth = True
+
+    async def get(self, request):
+        hass = request.app["hass"]
+        result = {}
+        for body_type in BODY_TYPES:
+            p = Persistence(hass, body_type)
+            await p.async_load()
+            result[body_type] = p._body_data()
+        return self.json(result)
+
+    async def post(self, request):
+        hass = request.app["hass"]
+        data = await request.json()
+        for body_type, body_data in data.items():
+            p = Persistence(hass, body_type)
+            await p.async_load()
+            p._data[body_type] = body_data
+            await p.async_save()
+        return self.json({"status": "ok"})
 
 
 def _start_debugger():
@@ -59,6 +92,9 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle unload — must be implemented for reload to work."""
     _LOG.info(f"__init__.async_unload_entry")
+
+    # Always clean up panel on unload
+    unregister_panel(hass)
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
@@ -170,6 +206,20 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
         "run_test_scenario",
         handle_run_test
     )
+
+    ###
+    ### Register panel if option enabled
+    ###
+    if config_entry.options.get(CONF_SHOW_PANEL, False):
+        register_panel(hass)
+
+
+
+    ###
+    ### Register the ESP rates view
+    ###
+    hass.http.register_view(ESPRatesView())
+
 
     _LOG.debug(f"..async_setup_entry: Done")
 

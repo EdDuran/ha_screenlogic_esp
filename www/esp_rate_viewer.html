@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP Rate Table Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:       #0a0e17;
+    --surface:  #111827;
+    --surface2: #1a2235;
+    --border:   #1e3a5f;
+    --accent:   #00d4ff;
+    --accent2:  #ff6b35;
+    --accent3:  #00ff9d;
+    --text:     #e2e8f0;
+    --text-dim: #64748b;
+    --danger:   #ff4560;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+  header { margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 20px; }
+  header .eyebrow { font-size: 10px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  header h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+
+  .meta-bar { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+  .meta-item { font-size: 11px; color: var(--text-dim); }
+  .meta-item strong { color: var(--accent3); font-weight: 500; }
+
+  /* Auth Panel */
+  .auth-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; margin-bottom: 32px; }
+  .auth-panel h3 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+  .auth-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+  .field label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+  .field input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 14px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-dim); opacity: 0.5; }
+
+  .hint { margin-top: 12px; font-size: 10px; color: var(--text-dim); line-height: 1.6; }
+  .hint strong { color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 20px; border-radius: 4px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 1px; cursor: pointer; border: 1px solid;
+    transition: all 0.15s; text-transform: uppercase; white-space: nowrap;
+  }
+  .btn-sm { padding: 6px 14px; font-size: 10px; }
+  .btn-primary { border-color: var(--accent);  color: var(--accent);  background: transparent; }
+  .btn-primary:hover { background: var(--accent);  color: var(--bg); }
+  .btn-danger  { border-color: var(--danger);  color: var(--danger);  background: transparent; }
+  .btn-danger:hover  { background: var(--danger);  color: white; }
+  .btn-close   { border-color: var(--border);  color: var(--text-dim); background: transparent; }
+  .btn-close:hover   { border-color: var(--text-dim); color: var(--text); }
+  .btn-save    { border-color: var(--accent3); color: var(--accent3); background: transparent; }
+  .btn-save:hover    { background: var(--accent3); color: var(--bg); }
+
+  /* Status */
+  .status-msg { margin-top: 12px; font-size: 11px; padding: 8px 12px; border-radius: 4px; display: none; }
+  .status-msg.error   { background: rgba(255,69,96,0.1);  color: var(--danger);  border: 1px solid rgba(255,69,96,0.3);  display: block; }
+  .status-msg.success { background: rgba(0,255,157,0.1); color: var(--accent3); border: 1px solid rgba(0,255,157,0.3); display: block; }
+  .status-msg.loading { background: rgba(0,212,255,0.1); color: var(--accent);  border: 1px solid rgba(0,212,255,0.3); display: block; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 8px 20px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: color 0.2s, border-color 0.2s;
+    font-family: 'Syne', sans-serif; font-weight: 600;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); }
+  .stat-value.accent  { color: var(--accent); }
+  .stat-value.accent2 { color: var(--accent2); }
+  .stat-value.accent3 { color: var(--accent3); }
+
+  /* Rate grid */
+  .rate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+
+  .bin-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; cursor: pointer; transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .bin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+  .bin-card:hover, .bin-card.active { border-color: var(--accent); transform: translateY(-2px); background: var(--surface2); }
+  .bin-card:hover::before, .bin-card.active::before { opacity: 1; }
+
+  .bin-range { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+  .bin-rate  { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .bin-unit  { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+  .bin-meta  { margin-top: 10px; display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); }
+  .bin-meta .sample-count { color: var(--accent3); font-weight: 500; }
+  .bin-warn  { font-size: 9px; color: var(--danger); margin-top: 6px; }
+  .heat-bar  { margin-top: 10px; height: 3px; border-radius: 2px; opacity: 0.4; transition: opacity 0.2s; }
+  .bin-card:hover .heat-bar, .bin-card.active .heat-bar { opacity: 0.8; }
+
+  /* Detail panel */
+  .detail-panel { display: none; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; margin-bottom: 24px; overflow: hidden; animation: slideDown 0.2s ease; }
+  .detail-panel.visible { display: block; }
+
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .detail-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; gap: 10px; }
+  .detail-title  { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); }
+  .detail-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .detail-table-wrap { padding: 20px; overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th { text-align: left; padding: 8px 12px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-weight: 400; }
+  th.center { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(30,58,95,0.4); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,212,255,0.03); }
+  tr.marked-delete td { opacity: 0.4; text-decoration: line-through; text-decoration-color: var(--danger); }
+
+  .rate-val { color: var(--accent); font-weight: 500; font-size: 13px; }
+  .ts-val   { color: var(--text-dim); font-size: 11px; }
+
+  .age-badge  { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; }
+  .age-fresh  { background: rgba(0,255,157,0.1); color: var(--accent3); }
+  .age-recent { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .age-old    { background: rgba(255,107,53,0.1); color: var(--accent2); }
+  .age-stale  { background: rgba(255,69,96,0.1);  color: var(--danger); }
+
+  .cb-wrap { display: flex; justify-content: center; }
+  input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--danger); cursor: pointer; }
+
+  /* Save bar */
+  .save-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--accent2); border-radius: 8px;
+    padding: 14px 24px; display: none; align-items: center; gap: 16px; font-size: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 100;
+  }
+  .save-bar.visible { display: flex; }
+  .pending-count { color: var(--accent2); font-weight: 500; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; font-size: 10px; color: var(--text-dim); align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Screenlogic ESP</div>
+    <h1>Rate Table <span>Viewer</span></h1>
+    <div class="meta-bar" id="metaBar" style="display:none">
+      <div class="meta-item">Updated: <strong id="metaUpdated">—</strong></div>
+      <div class="meta-item">Last Merge: <strong id="metaIntervals">—</strong></div>
+      <button class="btn btn-sm btn-close" onclick="refreshData()">↺ Refresh</button>
+      <button class="btn btn-sm btn-close" onclick="showAuth()">⚙ Settings</button>
+    </div>
+  </header>
+
+  <!-- Auth Panel -->
+  <div class="auth-panel" id="authPanel">
+    <h3>⚙ Connect to Home Assistant</h3>
+    <div class="auth-row">
+      <div class="field">
+        <label>HA Base URL</label>
+        <input type="text" id="haUrl" placeholder="http://homeassistant.local:8123">
+      </div>
+      <div class="field">
+        <label>Long-Lived Access Token</label>
+        <input type="password" id="haToken" placeholder="eyJ0eXAiOiJKV1Qi...">
+      </div>
+      <button class="btn btn-primary" onclick="connect()">Connect</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+    <div class="hint">
+      The URL is auto-detected since this page is served by HA.<br>
+      Generate a token at <strong>HA Profile → Long-Lived Access Tokens</strong>.
+      Token is saved in your browser's localStorage.
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs" style="display:none"></div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat"><div class="stat-label">Bins</div><div class="stat-value accent" id="statBins">0</div></div>
+    <div class="stat"><div class="stat-label">Total Samples</div><div class="stat-value accent3" id="statSamples">0</div></div>
+    <div class="stat"><div class="stat-label">Avg Rate (min/°F)</div><div class="stat-value" id="statAvgRate">—</div></div>
+    <div class="stat"><div class="stat-label">Last Merge</div><div class="stat-value accent2" id="statLastMerge">—</div></div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div class="detail-title" id="detailTitle">Air Temp Bin</div>
+      <div class="detail-actions">
+        <span id="deleteCount" style="font-size:11px; color:var(--danger); display:none"></span>
+        <button class="btn btn-sm btn-danger" id="btnDeleteSelected" style="display:none" onclick="confirmDelete()">Delete Selected</button>
+        <button class="btn btn-sm btn-close" onclick="closeDetail()">✕ Close</button>
+      </div>
+    </div>
+    <div class="detail-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="center">Del</th>
+            <th>#</th>
+            <th>Rate (min/°F)</th>
+            <th>Recorded At</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Legend + Grid -->
+  <div class="legend" id="legend" style="display:none">
+    <span style="font-size:10px; letter-spacing:1px; text-transform:uppercase; margin-right:4px; color:var(--text-dim)">Air temp:</span>
+    <div class="legend-item"><div class="legend-dot" style="background:#7eb8ff"></div>&lt;70°F cool</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>70–80°F warm</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>&gt;80°F hot</div>
+    <div class="legend-item" style="margin-left:auto"><div class="legend-dot" style="background:var(--danger)"></div>⚠ duplicate data</div>
+  </div>
+
+  <div class="rate-grid" id="rateGrid"></div>
+
+</div>
+
+<!-- Save Bar -->
+<div class="save-bar" id="saveBar">
+  <span><span class="pending-count" id="pendingCount">0</span> samples marked for deletion</span>
+  <button class="btn btn-save" onclick="saveChanges()">⬆ Save to HA</button>
+  <button class="btn btn-close" onclick="cancelAll()">Cancel All</button>
+</div>
+
+<script>
+  const API_ENDPOINT = '/api/ha_screenlogic_esp/rates';
+  const BIN_WIDTH    = 5;
+
+  let rawData    = null;
+  let activeBody = null;
+  let activeBin  = null;
+  let deletions  = {};
+  let haUrl      = '';
+  let haToken    = '';
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // Auto-detect HA URL from current page location
+    haUrl = window.location.origin;
+    document.getElementById('haUrl').value    = haUrl;
+    document.getElementById('haUrl').disabled = true;  // always correct in sidebar
+
+    haToken = localStorage.getItem('esp_ha_token') || '';
+    document.getElementById('haToken').value = haToken;
+
+    if (haToken) connect();
+
+    //haUrl   = localStorage.getItem('esp_ha_url')   || window.location.origin;
+    //haToken = localStorage.getItem('esp_ha_token') || '';
+
+    //document.getElementById('haUrl').value   = haUrl;
+    //document.getElementById('haToken').value = haToken;
+
+    //if (haToken) connect();
+  });
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
+  function showAuth() {
+    document.getElementById('authPanel').style.display = 'block';
+  }
+
+  async function connect() {
+    haUrl   = document.getElementById('haUrl').value.trim().replace(/\/$/, '');
+    haToken = document.getElementById('haToken').value.trim();
+
+    if (!haToken) { showStatus('Please enter a Long-Lived Access Token', 'error'); return; }
+
+    localStorage.setItem('esp_ha_url',   haUrl);
+    localStorage.setItem('esp_ha_token', haToken);
+
+    showStatus('Connecting...', 'loading');
+    await refreshData();
+  }
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+
+  async function refreshData() {
+    try {
+      const res = await fetch(`${haUrl}${API_ENDPOINT}`, {
+        headers: { 'Authorization': `Bearer ${haToken}`, 'Content-Type': 'application/json' }
+      });
+
+      if (res.status === 401) { showStatus('Unauthorized — check your access token', 'error'); return; }
+      if (res.status === 404) { showStatus('Endpoint not found — is ha_screenlogic_esp running in HA?', 'error'); return; }
+      if (!res.ok) { showStatus(`Error ${res.status}: ${res.statusText}`, 'error'); return; }
+
+      rawData = await res.json();
+      document.getElementById('authPanel').style.display = 'none';
+      hideStatus();
+      render();
+
+    } catch (err) {
+      showStatus(`Connection failed: ${err.message} — check the URL and that HA is reachable`, 'error');
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  function render() {
+    const bodyTypes = Object.keys(rawData);
+    if (!bodyTypes.length) return;
+    if (!activeBody || !bodyTypes.includes(activeBody)) activeBody = bodyTypes[0];
+
+    const bd = rawData[activeBody];
+
+    document.getElementById('metaBar').style.display     = 'flex';
+    document.getElementById('metaUpdated').textContent   = bd.last_updated ? new Date(bd.last_updated).toLocaleString() : '—';
+    document.getElementById('metaIntervals').textContent = bd.last_merge_intervals != null ? `${bd.last_merge_intervals} intervals` : '—';
+
+    const tabsEl = document.getElementById('tabs');
+    tabsEl.style.display = bodyTypes.length > 1 ? 'flex' : 'none';
+    tabsEl.innerHTML = bodyTypes.map(bt =>
+      `<div class="tab ${bt === activeBody ? 'active' : ''}" onclick="switchBody('${bt}')">${bt}</div>`
+    ).join('');
+
+    renderStats(bd);
+    document.getElementById('legend').style.display = 'flex';
+    renderGrid(bd);
+  }
+
+  function renderStats(bd) {
+    document.getElementById('statsBar').style.display = 'flex';
+    const table    = bd.rate_table || {};
+    const bins     = Object.keys(table).length;
+    const samples  = Object.values(table).reduce((a, s) => a + s.length, 0);
+    const allRates = Object.values(table).flat().map(s => s[0]);
+    const avgRate  = allRates.length ? allRates.reduce((a,b) => a+b, 0) / allRates.length : 0;
+
+    document.getElementById('statBins').textContent    = bins;
+    document.getElementById('statSamples').textContent = samples;
+    document.getElementById('statAvgRate').textContent = avgRate ? avgRate.toFixed(2) : '—';
+    document.getElementById('statLastMerge').textContent = bd.last_merge_intervals != null
+      ? `${bd.last_merge_intervals} intervals` : '—';
+  }
+
+  function renderGrid(bd) {
+    const grid  = document.getElementById('rateGrid');
+    const table = bd.rate_table || {};
+    const keys  = Object.keys(table).sort((a,b) => +a - +b);
+
+    if (!keys.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-dim)">
+        <div style="font-size:40px;opacity:0.3;margin-bottom:16px">🌡️</div>
+        <p>No rate data yet for <strong>${activeBody}</strong> — heat the spa to start learning!</p>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = keys.map(bin => {
+      const samples = table[bin];
+      const rates   = samples.map(s => s[0]);
+      const avg     = rates.reduce((a,b) => a+b, 0) / rates.length;
+      const newest  = Math.max(...samples.map(s => s[1]));
+      const temp    = +bin;
+      const hue     = temp > 80 ? `var(--accent2)` : temp > 70 ? `var(--accent)` : `#7eb8ff`;
+      const allSame = rates.length > 2 && rates.every(r => Math.abs(r - rates[0]) < 0.0001);
+      const warn    = allSame ? `<div class="bin-warn">⚠ Duplicate data detected</div>` : '';
+
+      return `
+        <div class="bin-card ${activeBin === bin ? 'active' : ''}" onclick="openDetail('${bin}')">
+          <div class="bin-range">${bin}°F — ${temp + BIN_WIDTH}°F</div>
+          <div class="bin-rate" style="color:${hue}">${avg.toFixed(2)}</div>
+          <div class="bin-unit">min / °F avg</div>
+          <div class="bin-meta">
+            <span class="sample-count">${samples.length} sample${samples.length !== 1 ? 's' : ''}</span>
+            <span>${new Date(newest * 1000).toLocaleDateString()}</span>
+          </div>
+          ${warn}
+          <div class="heat-bar" style="background:linear-gradient(90deg,${hue},transparent)"></div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Detail Panel ──────────────────────────────────────────────────────────
+
+  function openDetail(bin) {
+    activeBin     = bin;
+    const samples = rawData[activeBody].rate_table[bin];
+    const now     = Date.now() / 1000;
+
+    document.getElementById('detailTitle').textContent =
+      `Air Temp ${bin}°F — ${+bin + BIN_WIDTH}°F  ·  ${samples.length} samples`;
+
+    document.getElementById('detailBody').innerHTML = samples.map((s, i) => {
+      const key      = `${activeBody}|${bin}|${i}`;
+      const deleted  = !!deletions[key];
+      const ageDays  = (now - s[1]) / 86400;
+      const ageLabel = ageDays < 7 ? 'Fresh' : ageDays < 30 ? 'Recent' : ageDays < 90 ? 'Old' : 'Stale';
+      const ageClass = ageDays < 7 ? 'age-fresh' : ageDays < 30 ? 'age-recent' : ageDays < 90 ? 'age-old' : 'age-stale';
+
+      return `
+        <tr id="row-${key.replace(/\|/g,'-')}" class="${deleted ? 'marked-delete' : ''}">
+          <td class="center cb-wrap"><input type="checkbox" ${deleted ? 'checked' : ''} onchange="toggleDelete('${key}',this.checked)"></td>
+          <td style="color:var(--text-dim)">${i + 1}</td>
+          <td class="rate-val">${s[0].toFixed(4)}</td>
+          <td class="ts-val">${new Date(s[1] * 1000).toLocaleString()}</td>
+          <td><span class="age-badge ${ageClass}">${ageLabel}</span></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('detailPanel').classList.add('visible');
+    document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    updateDeleteUI();
+    renderGrid(rawData[activeBody]);
+  }
+
+  function closeDetail() {
+    activeBin = null;
+    document.getElementById('detailPanel').classList.remove('visible');
+    renderGrid(rawData[activeBody]);
+  }
+
+  // ── Delete Logic ──────────────────────────────────────────────────────────
+
+  function toggleDelete(key, checked) {
+    if (checked) deletions[key] = true; else delete deletions[key];
+    const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
+    if (row) row.classList.toggle('marked-delete', checked);
+    updateDeleteUI();
+  }
+
+  function updateDeleteUI() {
+    const total   = Object.keys(deletions).length;
+    const binDels = Object.keys(deletions).filter(k => k.startsWith(`${activeBody}|${activeBin}|`)).length;
+
+    document.getElementById('btnDeleteSelected').style.display = binDels > 0 ? 'inline-block' : 'none';
+    document.getElementById('deleteCount').style.display       = binDels > 0 ? 'inline' : 'none';
+    if (binDels > 0) document.getElementById('deleteCount').textContent = `${binDels} marked`;
+
+    const saveBar = document.getElementById('saveBar');
+    if (total > 0) { saveBar.classList.add('visible'); document.getElementById('pendingCount').textContent = total; }
+    else saveBar.classList.remove('visible');
+  }
+
+  function confirmDelete() {
+    const binDels = Object.keys(deletions).filter(k => k.startsWith(`${activeBody}|${activeBin}|`));
+    if (!binDels.length) return;
+    if (!confirm(`Delete ${binDels.length} sample(s)? Click "Save to HA" to persist the changes.`)) {
+      binDels.forEach(key => {
+        delete deletions[key];
+        const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
+        if (row) { row.classList.remove('marked-delete'); const cb = row.querySelector('input[type=checkbox]'); if (cb) cb.checked = false; }
+      });
+      updateDeleteUI();
+    }
+  }
+
+  function cancelAll() {
+    deletions = {};
+    document.getElementById('saveBar').classList.remove('visible');
+    if (activeBin) openDetail(activeBin);
+  }
+
+  // ── Save to HA ────────────────────────────────────────────────────────────
+
+  async function saveChanges() {
+    if (!Object.keys(deletions).length) return;
+
+    const updated = JSON.parse(JSON.stringify(rawData));
+
+    // Group deletions by body|bin and remove in reverse index order
+    const byBin = {};
+    for (const key of Object.keys(deletions)) {
+      const [body, bin, idx] = key.split('|');
+      (byBin[`${body}|${bin}`] = byBin[`${body}|${bin}`] || []).push(+idx);
+    }
+
+    for (const [bodyBin, indices] of Object.entries(byBin)) {
+      const [body, bin] = bodyBin.split('|');
+      indices.sort((a,b) => b - a).forEach(idx => updated[body].rate_table[bin].splice(idx, 1));
+      if (!updated[body].rate_table[bin].length) delete updated[body].rate_table[bin];
+      updated[body].sample_count = Object.values(updated[body].rate_table).reduce((a,s) => a + s.length, 0);
+    }
+
+    try {
+      showStatus('Saving to Home Assistant...', 'loading');
+      document.getElementById('authPanel').style.display = 'block';
+
+      const res = await fetch(`${haUrl}${API_ENDPOINT}`, {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${haToken}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify(updated)
+      });
+
+      if (!res.ok) { showStatus(`Save failed: ${res.status} ${res.statusText}`, 'error'); return; }
+
+      rawData   = updated;
+      deletions = {};
+      document.getElementById('saveBar').classList.remove('visible');
+      document.getElementById('authPanel').style.display = 'none';
+      closeDetail();
+      render();
+      showStatus('✓ Saved successfully to Home Assistant', 'success');
+      setTimeout(hideStatus, 3000);
+
+    } catch (err) {
+      showStatus(`Save failed: ${err.message}`, 'error');
+    }
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  function switchBody(bt) {
+    activeBody = bt; activeBin = null;
+    document.getElementById('detailPanel').classList.remove('visible');
+    render();
+  }
+
+  // ── Status helpers ────────────────────────────────────────────────────────
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className   = `status-msg ${type}`;
+    document.getElementById('authPanel').style.display = 'block';
+  }
+
+  function hideStatus() {
+    document.getElementById('statusMsg').className = 'status-msg';
+  }
+</script>
+</body>
+</html>

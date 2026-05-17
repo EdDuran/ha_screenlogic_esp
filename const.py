@@ -67,6 +67,8 @@ CONTEXT_HASS                = "hass"            # Home Assistant instance
 CONTEXT_TESTING             = "testing"         # Testing mode
 CONTEXT_EXPORT              = "export"          # Export data
 
+CONF_SHOW_PANEL = "show_sidebar_panel"
+
 POOL_ADAPTER_CONFIG = "adapter"
 DEFAULT_POOL_ADAPTER = "screenlogic_adapter"
 POOL_PREFIX   = "pool_prefix"

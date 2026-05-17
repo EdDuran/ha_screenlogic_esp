@@ -10,6 +10,11 @@ ln -sf /workspaces/ha_screenlogic_esp /config/custom_components/ha_screenlogic_e
 # Copy config files
 cp /workspaces/ha_screenlogic_esp/.devcontainer/config/configuration.yaml /config/configuration.yaml
 
+# Copy rate viewer
+mkdir -p /config/www/ha_screenlogic_esp
+cp /workspaces/ha_screenlogic_esp/www/esp_rate_viewer.html \
+   /config/www/ha_screenlogic_esp/esp_rate_viewer.html
+
 # Restore dashboard
 cp /workspaces/ha_screenlogic_esp/.devcontainer/config/lovelace /config/.storage/lovelace
 

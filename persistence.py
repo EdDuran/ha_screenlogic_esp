@@ -50,8 +50,9 @@ class Persistence:
         """Load persistent data from HA storage."""
         self._data   = await self._store.async_load() or {}
         self._loaded = True
+        last_merge_ts = self._body_data().get("last_merge_ts", 0.0)
         count = self._sample_count()
-        _LOG.debug(f"Persistence.async_load: [{self._body_type}] {count} samples loaded")
+        _LOG.debug(f"Persistence.async_load: [{self._body_type}] Samples[{count}] last_merge_ts=[{datetime.fromtimestamp(last_merge_ts, tz=timezone.utc).isoformat() if last_merge_ts else 'never'}]")
 
     async def async_save(self):
         """Save persistent data to HA storage."""
@@ -62,16 +63,38 @@ class Persistence:
     # Public API
     # -------------------------------------------------------------------------
 
-    async def merge_and_save(self, new_table: dict, intervals_used: int):
+    async def merge_and_save(self, new_table:dict, intervals:list, intervals_used:int):
         """
         Merge a freshly built rate table into persistent storage.
         Called by Estimator after each _build_rate_table().
+        intervals: list of (start_ts, end_ts) tuples from _extract_heater_on_intervals
+            Only merges intervals newer than last_merge_ts to avoid duplicates.
         """
         if not self._loaded:
             await self.async_load()
 
         body_data = self._body_data()
+        last_merge_ts  = body_data.get("last_merge_ts", 0.0)
+        new_high_water = last_merge_ts
         rate_table = body_data.setdefault("rate_table", {})
+
+        # Filter to only NEW intervals
+        new_intervals = [
+            (start, end, is_open) for start, end, is_open in intervals
+            if end > last_merge_ts
+        ]
+        if not new_intervals:
+            _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] no new intervals since last merge")
+            return
+
+        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] {len(new_intervals)} new intervals (of {len(intervals)} total)")
+
+        # Update high-water mark to latest interval end
+        # BUT Only advance high-water mark for closed intervals
+        closed_new = [(s, e) for s, e, open_ in new_intervals if not open_]
+        if closed_new:
+            new_high_water = max(e for _, e in closed_new)
+            body_data["last_merge_ts"] = new_high_water
 
         now_ts  = time.time()
         cutoff  = now_ts - (MAX_RATE_AGE_DAYS * 86400)

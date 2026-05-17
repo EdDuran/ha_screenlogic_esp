@@ -223,7 +223,7 @@ class ESPEstimator:
             persistence = Persistence(self._hass, self._body_type)
             await persistence.async_load()
             if export: ## export means running live data, so merge results
-                await persistence.merge_and_save(result["table"], result["used"])
+                await persistence.merge_and_save(result["table"], heating_intervals, result["used"])
 
             table = persistence.get_rate_table()
 
@@ -443,29 +443,28 @@ class ESPEstimator:
         on_start  = None
 
         for ts, heat_state in heat_states:
-            # Skip None/unavailable states — treat as continuation of previous state
             if heat_state is None or heat_state in ("unavailable", "unknown"):
                 _LOG.warning(f"...Skipping None/unavailable state at [{ts}]")
                 continue
-        
+
             is_on = heat_state.lower() == HEATER_STATUS_HEATING_VALUE.lower()
 
             if is_on and on_start is None:
                 on_start = ts
             elif not is_on and on_start is not None:
-                intervals.append((on_start, ts))
+                intervals.append((on_start, ts, False))  # ← 3-tuple, closed
                 on_start = None
 
-        # Close open interval at now if heater still on
+        # Close open interval if heater still on
         if on_start is not None and now_ts is not None:
-            intervals.append((on_start, now_ts))
-            _LOG.debug("...End of intervals and heater is still ON, closing interval at now")
+            intervals.append((on_start, now_ts, True))   # ← 3-tuple, open
+            _LOG.debug("...Heater still ON, closing interval at now")
 
-        for start_ts, end_ts in intervals:
+        for start_ts, end_ts, is_open in intervals:
             duration_min = (end_ts - start_ts) / 60.0
             dt = datetime.fromtimestamp(start_ts)
-            time = dt.strftime('%Y-%m-%d %H:%M:%S')
-            _LOG.debug(f"...start={start_ts:.0f}/{time} duration={duration_min:.1f} min")
+            time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            _LOG.debug(f"...start={start_ts:.0f}/{time_str} duration={duration_min:.1f} min is_open={is_open}")
 
         return intervals
 
@@ -537,7 +536,7 @@ class ESPEstimator:
         skipped_no_air   = 0
         total_chunks     = 0
 
-        for start_ts, end_ts in intervals:
+        for start_ts, end_ts, is_open in intervals:
             duration_min = (end_ts - start_ts) / 60.0
             if duration_min < min_interval_minutes:
                 skipped_short += 1
