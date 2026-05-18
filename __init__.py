@@ -20,7 +20,6 @@ from .const import (
     POOL_ADAPTER_CONFIG,
     DEFAULT_POOL_ADAPTER
 )
-from .auto_discovery import auto_discovery
 from .util import *
 from .test_runner import *
 import logging
@@ -40,21 +39,40 @@ class ESPRatesView(HomeAssistantView):
 
     async def get(self, request):
         hass = request.app["hass"]
-        result = {}
+
+        # Load from any body type — top level data is shared
+        p = Persistence(hass, BODY_TYPES[0])
+        await p.async_load()
+
+        result = {
+            "pool_type": p._data.get("pool_type", "Unknown"),
+            "bodies":    {}
+        }
+
         for body_type in BODY_TYPES:
             p = Persistence(hass, body_type)
             await p.async_load()
-            result[body_type] = p._body_data()
+            result["bodies"][body_type] = p._body_data()
+        
+        #_LOG.warning(f"__init__.ESPRatesView.get: query={request} result={result}")
+
         return self.json(result)
 
     async def post(self, request):
+        _LOG.warning(f"__init__.ESPRatesView.get: query={request}")
+
         hass = request.app["hass"]
         data = await request.json()
-        for body_type, body_data in data.items():
+        bodies = data.get("bodies", {})
+        #_LOG.warning(f"__init__.ESPRatesView.post: data={data}")
+
+        for body_type, body_data in bodies.items():
             p = Persistence(hass, body_type)
             await p.async_load()
+            p._data["pool_type"] = data.get("pool_type", "Unknown") # Ensure pool_type is saved at top level for easy access
             p._data[body_type] = body_data
             await p.async_save()
+            
         return self.json({"status": "ok"})
 
 
@@ -66,9 +84,9 @@ def _start_debugger():
 
     try:
         debugpy.listen(("0.0.0.0",5678))
-        _LOG.debug("Debugger listening on 5678")
+        _LOG.debug("__init__.Debugger listening on 5678")
     except RuntimeError:
-        _LOG.warning("Debugger already active")
+        _LOG.warning("__init__.Debugger already active")
 
     if not debugpy.is_client_connected():
         _LOG.warning("Waiting for debugger attach...")
@@ -76,7 +94,7 @@ def _start_debugger():
 
         debugpy.breakpoint()
 
-    _LOG.debug("Debugger attached")
+    _LOG.debug("__init__.Debugger attached")
 
 ###
 ### ----- Reload Integration ---------------------------------------------------
@@ -168,6 +186,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ## Create PoolAdapter and Discover it's Configuration
     try:
         pool_adapter:PoolAdapter = await PoolAdapter.create(hass, adapter_name)
+        _LOG.debug(f"Pool Adapter [{adapter_name}] created successfully with config: {pool_adapter}")
     except Exception as e:
         _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
 

@@ -41,6 +41,10 @@ class ESPCoordinator(DataUpdateCoordinator):
         self._contexts = {}                                     # {body_type: Context}
         self._unsub = []                                        # state change listeners
 
+    @property
+    def pool_adapter(self):
+        return self._pool_adapter
+    
     ###
     ### ----- HA Required Functions --------------------------------------------
     ###

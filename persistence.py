@@ -35,9 +35,10 @@ class Persistence:
     }
     """
 
-    def __init__(self, hass, body_type: str):
+    def __init__(self, hass, body_type:str, pool_type:str = "Unknown" ):
         self._hass      = hass
         self._body_type = body_type
+        self._pool_type = pool_type
         self._store     = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._data      = {}  # full storage data (all body types)
         self._loaded    = False
@@ -72,6 +73,8 @@ class Persistence:
         """
         if not self._loaded:
             await self.async_load()
+
+        self._data["pool_type"] = self._pool_type
 
         body_data = self._body_data()
         last_merge_ts  = body_data.get("last_merge_ts", 0.0)

@@ -33,7 +33,7 @@ def parse_entity_change(changes: set):
 ###
 
 class EntityCombo:
-    def __init__(self, entity_combo: str):
+    def __init__(self, entity_combo:str):
         self._entity_combo = entity_combo
         self._parse()
     

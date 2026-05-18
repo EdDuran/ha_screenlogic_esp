@@ -185,8 +185,8 @@
 <div class="container">
 
   <header>
-    <div class="eyebrow">Screenlogic ESP</div>
-    <h1>Rate Table <span>Viewer</span></h1>
+    <div class="eyebrow">PoolType: ?</div>
+    <h1>ESP Rate Table <span>Viewer</span></h1>
     <div class="meta-bar" id="metaBar" style="display:none">
       <div class="meta-item">Updated: <strong id="metaUpdated">—</strong></div>
       <div class="meta-item">Last Merge: <strong id="metaIntervals">—</strong></div>
@@ -351,11 +351,17 @@
   // ── Render ────────────────────────────────────────────────────────────────
 
   function render() {
-    const bodyTypes = Object.keys(rawData);
+    const poolType  = rawData.pool_type || "Unknown";  // fallback if missing
+    const bodyTypes = Object.keys(rawData.bodies);
     if (!bodyTypes.length) return;
+
     if (!activeBody || !bodyTypes.includes(activeBody)) activeBody = bodyTypes[0];
 
-    const bd = rawData[activeBody];
+    const bd = rawData.bodies[activeBody];
+
+
+    // Update header
+    document.querySelector('header .eyebrow').textContent = `PoolType: ${poolType}`;
 
     document.getElementById('metaBar').style.display     = 'flex';
     document.getElementById('metaUpdated').textContent   = bd.last_updated ? new Date(bd.last_updated).toLocaleString() : '—';
@@ -395,7 +401,7 @@
     if (!keys.length) {
       grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-dim)">
         <div style="font-size:40px;opacity:0.3;margin-bottom:16px">🌡️</div>
-        <p>No rate data yet for <strong>${activeBody}</strong> — heat the spa to start learning!</p>
+        <p>No rate data yet — heat the <strong>${activeBody}</strong> to start learning!</p>
       </div>`;
       return;
     }
@@ -429,7 +435,8 @@
 
   function openDetail(bin) {
     activeBin     = bin;
-    const samples = rawData[activeBody].rate_table[bin];
+    const bd      = rawData.bodies[activeBody];
+    const samples = bd.rate_table[bin];
     const now     = Date.now() / 1000;
 
     document.getElementById('detailTitle').textContent =
@@ -455,13 +462,13 @@
     document.getElementById('detailPanel').classList.add('visible');
     document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     updateDeleteUI();
-    renderGrid(rawData[activeBody]);
+    renderGrid(rawData.bodies[activeBody]);
   }
 
   function closeDetail() {
     activeBin = null;
     document.getElementById('detailPanel').classList.remove('visible');
-    renderGrid(rawData[activeBody]);
+    renderGrid(rawData.bodies[activeBody]);
   }
 
   // ── Delete Logic ──────────────────────────────────────────────────────────
@@ -521,9 +528,18 @@
 
     for (const [bodyBin, indices] of Object.entries(byBin)) {
       const [body, bin] = bodyBin.split('|');
-      indices.sort((a,b) => b - a).forEach(idx => updated[body].rate_table[bin].splice(idx, 1));
-      if (!updated[body].rate_table[bin].length) delete updated[body].rate_table[bin];
-      updated[body].sample_count = Object.values(updated[body].rate_table).reduce((a,s) => a + s.length, 0);
+
+      // Sort in reverse so splicing doesn't shift indices
+      const sorted = indices.sort((a, b) => b - a);
+      sorted.forEach(idx => updated.bodies[body].rate_table[bin].splice(idx, 1));
+
+      // Remove empty bins
+      if (!updated.bodies[body].rate_table[bin].length)
+        delete updated.bodies[body].rate_table[bin];
+
+      // Update sample count
+      updated.bodies[body].sample_count = Object.values(updated.bodies[body].rate_table)
+        .reduce((a, s) => a + s.length, 0);
     }
 
     try {

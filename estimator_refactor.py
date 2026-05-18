@@ -220,7 +220,9 @@ class ESPEstimator:
             table            = result["table"]
             used             = result["used"]
 
-            persistence = Persistence(self._hass, self._body_type)
+            pool_type = self._coordinator.pool_adapter.name
+            _LOG.warning(f"calculate: Loading  pool_type={pool_type}")
+            persistence = Persistence(self._hass, self._body_type, pool_type)
             await persistence.async_load()
             if export: ## export means running live data, so merge results
                 await persistence.merge_and_save(result["table"], heating_intervals, result["used"])

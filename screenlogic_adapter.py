@@ -40,6 +40,9 @@ class ScreenlogicAdapter(PoolAdapter):
         self._watch_entities = {} # Map of BodyTypes to List[EntityId]
 
         self.discover()
+    
+    def __str__(self):
+        return f"ScreenLogicAdapter: name[{self._name}] body_types[{self._body_types}] adapter_config[{self._adapter_config}] body_config[{self._body_config}] watch_entities[{self._watch_entities}]"   
 
     ### ----- name
     @property
