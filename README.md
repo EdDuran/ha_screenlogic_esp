@@ -45,9 +45,11 @@ Pool ESP sensor entity provides the State of Operation for each Body (Pool, Spa)
 * standby - The Heater has paused heating the water
 * maintaining - The Heater is maintaining the water temperature
 
-NOTE: State **ready** only occurs once and is a great mechanism to use in an Automation to alert you: "The Spa is ready sir". The Status Attribute will be "Ready"
+NOTE:
+* State **ready** only occurs once and is a great mechanism to use in an Automation to alert you: "The Spa is ready sir". The Status Attribute will be "Ready"
+* Additionally, **ready** is used when the heater is off and the water is at the Set Point
+* States **standby** and **maintaining** alternate as the Heater turns on and off to keep the water at temperature. During this time the Status Attribute will continue to be "Ready"
 
-States **standby** and **maintaining** alternate as the Heater turns on and off to keep the water at temperature. During this time the Status Attribute will continue to be "Ready"
 
 ## ESP Rate Viewer
 The Pool ESP has an option to include the Rate Viewer in the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactivly delete extraneous values.
