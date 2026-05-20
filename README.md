@@ -5,7 +5,7 @@ The Pool ESP (Estimate to Set Point) Integration answers the age-old question:
 
 > **_When will the Spa be ready?_**
 
-Pool ESP will automatically discovers your Pentair Screenlogic Device and creates it's own ESP Entities. Utilizing Home Assistant historically recorded data, Pool and Spa heating sessions are analyzed to calculate the heating rate and estimate when the Water Temperature Set Point will be reached.
+Pool ESP will automatically discover your Pentair Screenlogic Device and creates it's own ESP Entities. Utilizing Home Assistant historically recorded data, Pool and Spa heating sessions are analyzed to calculate the heating rate and estimate when the Water Temperature Set Point will be reached.
 
 The HA Recorder defaults to purge data after 10 days; Pool ESP can only look at data that far back in time. The Recorder purge can be adjusted in your [configuration.yaml](#configuration-steps):
 
@@ -82,10 +82,20 @@ Pool ESP sensor entities provide the State of Operation:
 
 ## Sample Dashboard
 In this example, the Spa Circuit is off, Heater enabled but not heating. Water is 98°, set to 99°. The ESP State is off (because the Circuit is off) and estimating that if it were turned on, it would take about 5 minutes to heat up.
+
 <img width="300" height="500" alt="ESP Spa Dashboard" src="https://github.com/user-attachments/assets/a6e3a00e-d755-4eb4-adbc-68eb88f4b6b7" />
 
 ## ESP Rate Viewer
 The Pool ESP settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactivly delete extraneous values.
+
+### First Time
+The first time running the ESP Rate Viewer you'll need to provide your Long-lived Access Token.
+
+1. Go to your Home Assistant Profile
+2. Security Tab
+3. Scroll to the bottom and create your Token
+4. Copy and paste the value into the ESP Rate Viewer Settings field and click Connect
+   - Recommend that you save this token somewhere
 
 <img width="1886" height="1018" alt="ESP Rate Viewer" src="https://github.com/user-attachments/assets/4ebb96b9-1750-41b8-833b-a70abe0a7e94" />
 
