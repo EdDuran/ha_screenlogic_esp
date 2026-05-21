@@ -1,6 +1,6 @@
 from homeassistant.const import Platform
 
-DOMAIN = "screenlogic_esp"
+DOMAIN = "pool_esp"
 SCREENLOGIC_DOMAIN = "screenlogic"
 
 # List of Entity Platforms which the ESP supports
@@ -79,6 +79,10 @@ POOL_ID       = "pool_id"
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"
 BODY_TYPES = [ BODY_TYPE_POOL, BODY_TYPE_SPA ]
+
+WATCHDOG_MIN_MINUTES = 10   # always wait at least 10 min
+WATCHDOG_MAX_MINUTES = 30   # never wait more than 30 min
+WATCHDOG_THRESHOLD   = 0.5  # flag if actual rise < 50% of expected
 
 ###
 ### <datatype>:<sensor>[/attribute]:watch

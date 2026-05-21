@@ -185,7 +185,7 @@
 <div class="container">
 
   <header>
-    <div class="eyebrow">PoolType: ?</div>
+    <div class="eyebrow">Estimate to Set Point</div>
     <h1>ESP Rate Table <span>Viewer</span></h1>
     <div class="meta-bar" id="metaBar" style="display:none">
       <div class="meta-item">Updated: <strong id="metaUpdated">—</strong></div>
@@ -275,13 +275,14 @@
 </div>
 
 <script>
-  const API_ENDPOINT = '/api/ha_screenlogic_esp/rates';
+  const API_ENDPOINT = '/api/pool_esp/rates';
   const BIN_WIDTH    = 5;
 
   let rawData    = null;
   let activeBody = null;
   let activeBin  = null;
-  let deletions  = {};
+  let deletions  = {};    // confirmed deletions
+  let pending    = {};    // pending deletions not yet confirmed
   let haUrl      = '';
   let haToken    = '';
 
@@ -335,7 +336,7 @@
       });
 
       if (res.status === 401) { showStatus('Unauthorized — check your access token', 'error'); return; }
-      if (res.status === 404) { showStatus('Endpoint not found — is ha_screenlogic_esp running in HA?', 'error'); return; }
+      if (res.status === 404) { showStatus('Endpoint not found — is pool_esp running in HA?', 'error'); return; }
       if (!res.ok) { showStatus(`Error ${res.status}: ${res.statusText}`, 'error'); return; }
 
       rawData = await res.json();
@@ -361,7 +362,7 @@
 
 
     // Update header
-    document.querySelector('header .eyebrow').textContent = `PoolType: ${poolType}`;
+    document.querySelector('header .eyebrow').textContent = `${poolType}: Estimate to Set Point`;
 
     document.getElementById('metaBar').style.display     = 'flex';
     document.getElementById('metaUpdated').textContent   = bd.last_updated ? new Date(bd.last_updated).toLocaleString() : '—';
@@ -474,40 +475,60 @@
   // ── Delete Logic ──────────────────────────────────────────────────────────
 
   function toggleDelete(key, checked) {
-    if (checked) deletions[key] = true; else delete deletions[key];
+    if (checked) pending[key] = true; else delete pending[key];
     const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
     if (row) row.classList.toggle('marked-delete', checked);
     updateDeleteUI();
   }
 
   function updateDeleteUI() {
-    const total   = Object.keys(deletions).length;
-    const binDels = Object.keys(deletions).filter(k => k.startsWith(`${activeBody}|${activeBin}|`)).length;
+    const confirmedCount = Object.keys(deletions).length;
+    const binPending     = Object.keys(pending).filter(k => k.startsWith(`${activeBody}|${activeBin}|`)).length;
 
-    document.getElementById('btnDeleteSelected').style.display = binDels > 0 ? 'inline-block' : 'none';
-    document.getElementById('deleteCount').style.display       = binDels > 0 ? 'inline' : 'none';
-    if (binDels > 0) document.getElementById('deleteCount').textContent = `${binDels} marked`;
+    // Delete Selected button — show when checkboxes are ticked
+    document.getElementById('btnDeleteSelected').style.display = binPending > 0 ? 'inline-block' : 'none';
+    document.getElementById('deleteCount').style.display       = binPending > 0 ? 'inline' : 'none';
+    if (binPending > 0) document.getElementById('deleteCount').textContent = `${binPending} checked`;
 
+    // Save bar — only show when something is CONFIRMED for deletion
     const saveBar = document.getElementById('saveBar');
-    if (total > 0) { saveBar.classList.add('visible'); document.getElementById('pendingCount').textContent = total; }
-    else saveBar.classList.remove('visible');
-  }
-
-  function confirmDelete() {
-    const binDels = Object.keys(deletions).filter(k => k.startsWith(`${activeBody}|${activeBin}|`));
-    if (!binDels.length) return;
-    if (!confirm(`Delete ${binDels.length} sample(s)? Click "Save to HA" to persist the changes.`)) {
-      binDels.forEach(key => {
-        delete deletions[key];
-        const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
-        if (row) { row.classList.remove('marked-delete'); const cb = row.querySelector('input[type=checkbox]'); if (cb) cb.checked = false; }
-      });
-      updateDeleteUI();
+    if (confirmedCount > 0) {
+        saveBar.classList.add('visible');
+        document.getElementById('pendingCount').textContent = confirmedCount;
+    } else {
+        saveBar.classList.remove('visible');
     }
-  }
+}
+
+ function confirmDelete() {
+    const binPending = Object.keys(pending).filter(k => k.startsWith(`${activeBody}|${activeBin}|`));
+    if (!binPending.length) return;
+
+    if (!confirm(`Confirm deletion of ${binPending.length} sample(s)? Click "Save to HA" to persist.`)) {
+        // User cancelled — uncheck the rows
+        binPending.forEach(key => {
+            delete pending[key];
+            const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
+            if (row) {
+                row.classList.remove('marked-delete');
+                const cb = row.querySelector('input[type=checkbox]');
+                if (cb) cb.checked = false;
+            }
+        });
+    } else {
+        // User confirmed — move to deletions
+        binPending.forEach(key => {
+            deletions[key] = true;
+            delete pending[key];
+        });
+    }
+    updateDeleteUI();
+}
 
   function cancelAll() {
     deletions = {};
+    pending   = {};
+
     document.getElementById('saveBar').classList.remove('visible');
     if (activeBin) openDetail(activeBin);
   }

@@ -1,6 +1,8 @@
 import logging
 import traceback
 
+from custom_components.pool_esp.sensor import ESPSensor
+
 from .coordinator import *
 from .const import *
 from .util import *
@@ -35,10 +37,25 @@ async def esp_state_machine(context:Context, cause:str = "Unknown"):
         _LOG.info(f"StateMachine: Cause[{cause}] State[{current_state}]")
 
         #
-        # Execute State Machine - Until SM_EXIT is returned
+        # Execute State Machine - Until:
+        #  o SM_EXIT is returned
+        #  o We're going in a loop (detect by breadcrumbs)
         #
+        breadcrumbs:list = []
         result = None
         while iteration < max_iterations and current_state is not None and current_state != SM_EXIT:
+
+            ###
+            ### If we've executed this state before, we can exit to prevent infinite loops
+
+            if (breadcrumbs.__contains__(current_state)):
+                _LOG.warning(f"...Have been here before; Done. Breadcrumbs: {breadcrumbs}")
+                break
+            else:
+                breadcrumbs.append(current_state)
+
+            _LOG.debug(f"...Breadcrumbs:{breadcrumbs}")
+
             iteration += 1
 
             current_transitions = STATE_TRANSITIONS.get(current_state, None)
@@ -382,8 +399,8 @@ class SensingCallback(TimerCallback):
 
             _LOG.info(f"SensingCallback.on_timer_cycle: {timer}, Seconds remaining[{seconds_remaining}]")
 
-            await context.coordinator.async_request_refresh()
-            ### TODO update ESP Entity Value
+            coordinator:ESPCoordinator = context.coordinator
+            coordinator.update_sensor(body_type)
 
     ###
     ### ----- on_timer_complete

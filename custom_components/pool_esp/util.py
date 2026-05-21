@@ -606,17 +606,19 @@ class Context():
         return self.water_temp >= self.target_temp
     
     def is_target_change(self) -> bool:
-        """Is the Target Temperature changed value? """
-        _LOG.info(f"_is_target_change[{self.changes}]")
+        """Is the Body Target Temperature changed value? """
+        target_change:bool = False
+
         if self.changes:
             for change in self.changes:
-                _LOG.debug(f"...Change:[{change}]")
                 body_type, attr, value = parse_entity_change(change)
                 _LOG.debug(f"...{body_type} : {attr} : {value}")
-                return body_type == self.body_type and attr == ATTR_TEMP
-        else:
-            return False
+                target_change = body_type == self.body_type and attr == ATTR_TEMP
 
+        _LOG.info(f"_is_target_change({self.changes})? --> [{target_change}]")
+
+        return target_change
+    
     def get_esp_result(self) -> str:
         """
         Get the State Machine signal from current sensor values.

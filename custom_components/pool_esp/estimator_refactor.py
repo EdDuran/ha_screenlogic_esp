@@ -217,39 +217,41 @@ class ESPEstimator:
                 MIN_RATE_DEG_PER_HOUR,
             )
 
-            table            = result["table"]
-            used             = result["used"]
-
-            pool_type = self._coordinator.pool_adapter.name
-            _LOG.warning(f"calculate: Loading  pool_type={pool_type}")
-            persistence = Persistence(self._hass, self._body_type, pool_type)
-            await persistence.async_load()
-            if export: ## export means running live data, so merge results
-                await persistence.merge_and_save(result["table"], heating_intervals, result["used"])
-
-            table = persistence.get_rate_table()
-
+            table = result["table"]
             skipped_short    = result["skipped_short"]
             skipped_no_rise  = result["skipped_no_rise"]
             skipped_slow     = result["skipped_slow"]
             skipped_no_water = result["skipped_no_water"]
             skipped_no_air   = result["skipped_no_air"]
 
+            _LOG.debug(
+                f"...calculate: rate table built [{self._body_type}] — skipped(short={skipped_short}, no_rise={skipped_no_rise} slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
+            )
+
+            if not table:
+                detail = f"calculate: [{self._body_type}] No usable heating intervals yet — need more history"
+                _LOG.warning(f"calculate: [{self._body_type}] {detail}")
+                return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
+
+            ###
+            ### Merge new rate table with persisted historical data, and save back to disk
+            ###
+            used  = result["used"]
+            pool_type = self._coordinator.pool_adapter.name
+            persistence = Persistence(self._hass, self._body_type, pool_type)
+            await persistence.async_load()
+            if export: ## export means running live data, so merge results
+                await persistence.merge_and_save(table, heating_intervals, used)
+
+            ### After merging, reload the full rate
+            table = persistence.get_rate_table()
+
         except Exception:
             _LOG.error(traceback.format_exc())
             raise ESPException("ERROR", "calculate: Failed to build rate table") from e
 
-        _LOG.debug(
-            f"...calculate: rate table built [{self._body_type}] — used={used} skipped(short={skipped_short}, no_rise={skipped_no_rise} slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
-        )
-
         ##debugpy.breakpoint()
         
-        if not table:
-            detail = f"calculate: [{self._body_type}] No usable heating intervals yet — need more history"
-            _LOG.warning(f"calculate: [{self._body_type}] {detail}")
-            return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
-
         # --- Log rate table --------------------------------------------------
         for bin_key in sorted(table.keys()):
             samples = table[bin_key]
@@ -328,6 +330,16 @@ class ESPEstimator:
             f" air={round(current_air)}F"
             f" [heater {heater_note}]"
         )
+
+        ###
+        ### Start/Reset HeaterWatchdog based on current heater status and calculated rate
+        ###
+        if heater_is_on and rate:
+            self._coordinator._watchdogs[self._body_type].start(
+                current_water, rate, degrees_remaining
+            )
+        else:
+            self._coordinator._watchdogs[self._body_type].cancel()
 
         execution_endtime = time.time()
         execution_duration = execution_endtime - execution_starttime
@@ -542,22 +554,26 @@ class ESPEstimator:
             duration_min = (end_ts - start_ts) / 60.0
             if duration_min < min_interval_minutes:
                 skipped_short += 1
+                _LOG.warning(f"...Skipping short interval: {duration_min:.1f} min")
                 continue
 
             w_start = interpolate(water_temps, start_ts)
             w_end   = interpolate(water_temps, end_ts)
             if w_start is None or w_end is None:
                 skipped_no_water += 1
+                _LOG.warning(f"...Skipping interval with no water data at start or end: {duration_min:.1f} min")
                 continue
 
             degrees_gained = w_end - w_start
             if degrees_gained < min_degrees_gained:
                 skipped_no_rise += 1
+                _LOG.warning(f"...Skipping WaterTemp no-rise interval[{w_start} to {w_end}] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
             rate_per_hour = degrees_gained / (duration_min / 60.0)
             if rate_per_hour < min_rate_deg_per_hour:
                 skipped_slow += 1
+                _LOG.warning(f"...Skipping slow interval: RatePerHour[{rate_per_hour:.2f}°/hr] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
             start_degree = int(w_start) + 1
@@ -569,6 +585,7 @@ class ESPEstimator:
                 if avg_air is not None:
                     table.setdefault(air_bin(avg_air), []).append(duration_min / degrees_gained)
                     total_chunks += 1
+                    _LOG.debug(f"...Interval: {duration_min:.1f} min, {degrees_gained:.2f}° gained, air={avg_air:.1f}F")
                 continue
 
             degree_timestamps = [(w_start, start_ts)]

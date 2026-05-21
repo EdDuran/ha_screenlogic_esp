@@ -12,7 +12,7 @@ def register_panel(hass):
             sidebar_title     = "Pool ESP Rates",
             sidebar_icon      = "mdi:chart-bell-curve",
             frontend_url_path = "esp-rates",
-            config            = {"url": "/local/ha_screenlogic_esp/esp_rate_viewer.html"},
+            config            = {"url": "/local/pool_esp/esp_rate_viewer.html"},
             require_admin     = False
         )
         _LOG.debug("Pool ESP Rates sidebar panel registered")

@@ -33,8 +33,8 @@ class ESPRatesView(HomeAssistantView):
     View to get/set ESP rates data. This is used by the panel to persist rates data,
     which is not stored in the Coordinator and thus not persisted across restarts by default.
     """
-    url = "/api/ha_screenlogic_esp/rates"
-    name = "api:ha_screenlogic_esp:rates"
+    url = "/api/pool_esp/rates"
+    name = "api:pool_esp:rates"
     requires_auth = True
 
     async def get(self, request):
@@ -77,6 +77,8 @@ class ESPRatesView(HomeAssistantView):
 
 
 def _start_debugger():
+
+    _LOG.debug(f"__init__._start_debugger: Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
 
     if not os.getenv("HA_DEBUG"):
         _LOG.warning("HA_DEBUG is not set...Debugging will not be available")
@@ -221,7 +223,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ###
     _LOG.debug(f"...async_setup_entry: Register [run_test_scenario] -> [run_scenario]")
     hass.services.async_register(
-        "screenlogic_esp",
+        "pool_esp",
         "run_test_scenario",
         handle_run_test
     )

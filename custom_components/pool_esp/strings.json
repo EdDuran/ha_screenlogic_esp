@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pool ESP — Estimate to Set Point",
+        "description": "Automatically configured from your Home Assistant integration"
+      }
+    },
+    "abort": {
+      "no_screenlogic": "No Pool Adapter integration found. Please configure Pool Adapter first.",
+      "already_configured": "ESP is already configured for your device"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ESP Options",
+        "data": {
+          "heater_kwh": "Heater power consumption (kWh)",
+          "energy_cost": "Energy cost per kWh ($)",
+          "currency": "Currency symbol",
+          "show_sidebar_panel": "Show ESP Rates in sidebar"
+        }
+      }
+    }
+  },
+  "issues": {
+    "missing_pool_adapter": {
+      "title": "Pool Adapter integration not found",
+      "description": "ESP requires a Pool Adapter integration to be configured. Add to configuration.yaml and restart."
+    },
+    "heater_performance": {
+      "title": "Heater Performance Issue — {body_type}",
+      "description": "The {body_type} heater is not performing as expected.\n\nExpected temperature rise: **+{expected_rise}°F**\nActual temperature rise: **+{actual_rise}°F**\nCurrent water temperature: **{current_temp}°F**\n\nThis may indicate a heater startup delay, low gas pressure, or mechanical issue. Check the heater and dismiss this alert once resolved."
+    }
+  }
+}

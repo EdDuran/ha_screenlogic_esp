@@ -23,15 +23,18 @@ class Persistence:
     
     Rate table structure (per body_type):
     {
-        "spa": {
-            "rate_table": {
-                "70": [[rate, timestamp], ...],
-                "75": [[rate, timestamp], ...]
+        "bodies": {
+            "pool": {},
+            "spa": {    
+                "rate_table": {
+                    "70": [[rate, timestamp], ...],
+                    "75": [[rate, timestamp], ...]
+                },
+                "last_updated": "2026-05-12T00:00:00+00:00",
+                "sample_count": 42,
+                "last_merge_intervals": 3
             },
-            "last_updated": "2026-05-12T00:00:00+00:00",
-            "sample_count": 42,
-            "last_merge_intervals": 3
-        }
+        "pool_type": "Screenlogic"
     }
     """
 
@@ -90,7 +93,11 @@ class Persistence:
             _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] no new intervals since last merge")
             return
 
-        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] {len(new_intervals)} new intervals (of {len(intervals)} total)")
+        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] new intervals[{len(new_intervals)}] of {len(intervals)} total)")
+        for start, end, is_open in new_intervals:
+            ending_at = datetime.fromtimestamp(end, tz=timezone.utc).isoformat()
+            duration = (end - start) / 60.0
+            _LOG.debug(f"...Interval: End:[{ending_at}] Duration:[{duration:.1f} min] Open[{is_open}]")
 
         # Update high-water mark to latest interval end
         # BUT Only advance high-water mark for closed intervals
@@ -100,7 +107,7 @@ class Persistence:
             body_data["last_merge_ts"] = new_high_water
 
         now_ts  = time.time()
-        cutoff  = now_ts - (MAX_RATE_AGE_DAYS * 86400)
+        cutoff  = now_ts - (MAX_RATE_AGE_DAYS * 86400) # In seconds
         merged  = 0
         pruned  = 0
 

@@ -5,7 +5,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import DeviceInfo, HomeAssistant
 from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDeviceClass
 
-from .coordinator import ESPCoordinator
 from .util import *
 from .const import *
 
@@ -13,14 +12,18 @@ from .const import *
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_add_entities):
+    from .coordinator import ESPCoordinator
 
     coordinator = hass.data[DOMAIN][config_entry.entry_id][ADDONS_COORDINATOR]
 
     sensors = [
-        ESPSensor(coordinator, "pool"),
-        ESPSensor(coordinator, "spa")
+        ESPSensor(coordinator, BODY_TYPE_POOL),
+        ESPSensor(coordinator, BODY_TYPE_SPA)
     ]
     async_add_entities(sensors)
+
+    coordinator.add_sensor(BODY_TYPE_POOL, sensors[0])
+    coordinator.add_sensor(BODY_TYPE_SPA, sensors[1])
 
 class ESPSensor(CoordinatorEntity, SensorEntity):
 

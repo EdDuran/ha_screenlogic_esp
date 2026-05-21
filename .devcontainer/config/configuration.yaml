@@ -3,10 +3,11 @@ default_config:
 logger:
   default: info
   logs:
-    custom_components.ha_screenlogic_esp: info
-    custom_components.ha_screenlogic_esp.estimator_refactor: debug
-    custom_components.ha_screenlogic_esp.state_machine: debug
-
+    custom_components.pool_esp: debug          
+    custom_components.pool_esp.test_runner: debug          
+    custom_components.pool_esp.estimator_refactor: debug          
+    custom_components.pool_esp.state_machine: debug          
+    custom_components.pool_esp.persistence: debug  
 homeassistant:
   time_zone: America/New_York
 

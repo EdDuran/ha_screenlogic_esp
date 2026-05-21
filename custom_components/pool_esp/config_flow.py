@@ -1,18 +1,20 @@
+from custom_components.pool_esp.util import PoolAdapter
 import voluptuous as vol
 import logging
 
 from dataclasses_json import config
+from homeassistant.components.homeassistant import IssueSeverity
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, callback
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant import config_entries
 
 from .panel import register_panel, unregister_panel
-from .const import DOMAIN, CONF_SHOW_PANEL
+from .const import DEFAULT_POOL_ADAPTER, DOMAIN, CONF_SHOW_PANEL, POOL_ADAPTER_CONFIG
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 async def _find_screenlogic_device(hass):
     """
@@ -61,9 +63,36 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, info=None):
         """Called when user adds integration from UI."""
-        _LOGGER.info(f"CONFIG_FLOW: async_setup_user Info:[{info}]")
+        _LOG.info(f"async_setup_user Info:[{info}]")
+        _LOG.debug(f"async_setup_user config:[{type(config)} / {config}]")
 
-        adapter_name = config.get("adapter", "ScreenlogicAdapter")
+        yaml_config = self.hass.data.get(DOMAIN, {}).get("yaml_config")
+        if yaml_config is not None:
+            adapter_name = yaml_config.get(POOL_ADAPTER_CONFIG, {})
+        
+        if yaml_config is None or adapter_name is None:
+            adapter_name = DEFAULT_POOL_ADAPTER
+            _LOG.warning(f"configuration.yaml: pool_esp.adapter missing. Defaulting to [{adapter_name}]")
+
+        ## Create PoolAdapter and Discover it's Configuration
+        try:
+            pool_adapter:PoolAdapter = await PoolAdapter.create(self.hass, adapter_name)
+            _LOG.debug(f"Pool Adapter [{adapter_name}] created successfully with config: {pool_adapter}")
+        except Exception as e:
+            _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
+
+            ir.async_get_or_create(
+                self.hass,
+                DOMAIN,
+                "missing_pool_adapter",
+                is_fixable=False,
+                severity=IssueSeverity.ERROR,
+                translation_key="missing_pool_adapter",
+            )
+            # Don't fail setup entirely — just raise ConfigEntryNotReady
+            # HA will retry setup automatically
+            raise ConfigEntryNotReady(f"Failed to initialize integration") from e
+    
 
         #
         # Auto-discover ScreenLogic device
@@ -72,7 +101,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device = await _find_screenlogic_device(self.hass)
 
         if device is None:
-            _LOGGER.info(f"...No ScreenLogic Device")
+            _LOG.info(f"...No ScreenLogic Device")
             return self.async_abort(reason="no_screenlogic_device")
 
         #
@@ -84,7 +113,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 key = e[0]
                 if (key == "mac"):
                     mac = e[1]
-                    _LOGGER.info(f"...MAC is {mac}")
+                    _LOG.info(f"...MAC is {mac}")
                     # Assign a unique ID to the flow and abort the flow
                     # if another flow with the same unique ID is in progress
                     await self.async_set_unique_id(mac)
@@ -96,7 +125,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # Create Device Entry
                     #
                     device_name = f"{device.name} ESP"
-                    _LOGGER.info(f"..Creating Device: {device_name}")
+                    _LOG.info(f"..Creating Device: {device_name}")
                     # No user input needed — fully automatic
                     return self.async_create_entry(
                         title=device_name,
@@ -109,7 +138,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # endif key is 'mac'
             # end for each connection
         else:
-            _LOGGER.info(f"Connections is empty")
+            _LOG.info(f"Connections is empty")
             return False
 
 

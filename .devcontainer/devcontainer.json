@@ -3,7 +3,7 @@
 
   "image": "ghcr.io/home-assistant/home-assistant:stable",
 
-  "workspaceFolder": "/workspaces/integration",
+  "workspaceFolder": "/workspaces/pool_esp",
 
   "forwardPorts": [8123],
 

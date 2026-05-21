@@ -1,6 +1,7 @@
 import logging
 import time
 import traceback
+from weakref import WeakSet
 import debugpy
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,6 +15,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import *
 from .util import *
 from .state_machine import esp_state_machine
+from .heater_watchdog import HeaterWatchdog
 
 _LOG = logging.getLogger(__name__)
 
@@ -40,11 +42,25 @@ class ESPCoordinator(DataUpdateCoordinator):
         self._watch_entities = pool_adapter.watch_entities      # Pool Entities we're watching
         self._contexts = {}                                     # {body_type: Context}
         self._unsub = []                                        # state change listeners
+        self._sensors = WeakSet()                               # Set of HA Sensor Entities to update when ESP changes
 
     @property
     def pool_adapter(self):
         return self._pool_adapter
+        
+    def add_sensor(self, body_type, sensor):
+        """
+        Add a Sensor Entity to the Coordinator's set of sensors to update when ESP changes
+        """
+        self._sensors.add(sensor)
     
+    def update_sensor(self, body_type):
+        """
+        Tell the Sensor Entity for the specified body type to update its state in Home Assistant
+        """
+        for sensor in self._sensors:
+            if sensor._body_type == body_type:
+                sensor.async_write_ha_state()
     ###
     ### ----- HA Required Functions --------------------------------------------
     ###
@@ -65,6 +81,15 @@ class ESPCoordinator(DataUpdateCoordinator):
             self._contexts[body_type] = context
 
         _LOG.debug(f"...WatchEntities: {self._watch_entities}")
+
+        ###
+        ### One watchdog per body type
+        ### Watchdog monitors heating progress and flags potential heater issues
+        ###
+        self._watchdogs = {
+            body_type: HeaterWatchdog(self, body_type)
+            for body_type in BODY_TYPES
+        }
 
         # Register state change listeners
         # Calls "_handle_state_change" when any Watch Entity changes
@@ -215,6 +240,7 @@ class ESPCoordinator(DataUpdateCoordinator):
                 seconds = esp.seconds if (esp is not None) else 0
                 confidence = esp.confidence_label if (esp is not None) else "Unknown"
                 _LOG.debug(f"...Status[{status}] ESP[{seconds}] Confidence[{confidence}]")
+                self.update_sensor(body_type)
             else:
                 _LOG.warning(f"...No ESP data available")
                 
@@ -266,8 +292,8 @@ class ESPCoordinator(DataUpdateCoordinator):
                 raise ESPException("ERROR", details) from e
         # end if
 
-        # Tell HA entities to update
-        await self.async_request_refresh()
+        # TODO Tell HA entities to update
+        # sensor.async_set_updated_data()
 
     async def _async_update_data(self):
         _LOG.info(f"ESPCoordinator._async_update_data")

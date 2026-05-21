@@ -1,0 +1,2804 @@
+{
+  "metadata": {
+    "exported_at": "2026-05-08T00:00:15.292255+00:00",
+    "body_type": "spa",
+    "start": "2026-04-07 00:00:15.288003+00:00",
+    "end": "2026-05-08 00:00:15.288003+00:00",
+    "hours": 744,
+    "config": {
+      "WATER_TEMP": "float:climate.pentair_21_ce_68_spa_heat/current_temperature:WATCH",
+      "CLIMATE_MODE": "str:climate.pentair_21_ce_68_spa_heat:WATCH",
+      "CLIMATE_STATUS": "str:climate.pentair_21_ce_68_spa_heat/hvac_action:WATCH",
+      "TARGET_TEMP": "float:climate.pentair_21_ce_68_spa_heat/temperature:WATCH",
+      "AIR_TEMP": "float:sensor.pentair_21_ce_68_air_temperature:IGNORE",
+      "CIRCUIT": "str:switch.pentair_21_ce_68_spa:WATCH"
+    }
+  },
+  "history": {
+    "sensor.pentair_21_ce_68_air_temperature": [
+      {
+        "state": "92",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:09:19.182290+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:10:09.787199+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "92",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:13:40.810255+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:14:42.228357+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:16:34.100234+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:17:33.443624+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:30:10.939596+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:30:12.240150+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:32:48.014439+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:32:55.332478+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:33:26.351952+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:35:37.252769+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:36:16.247462+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:37:04.757616+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:37:58.110237+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:39:09.635914+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:39:50.663524+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:40:29.797589+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:41:00.493074+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:42:24.843739+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:43:02.692352+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:45:08.989566+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:45:54.552906+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:48:26.288775+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:49:16.752837+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:49:54.258555+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:49:55.841734+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:50:57.429977+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:51:58.624882+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:53:30.309242+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:54:18.453176+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:57:14.304183+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:57:21.494941+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T18:58:33.019808+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:00:13.334913+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:00:48.605982+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:05:41.222860+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:05:59.104405+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:07:30.825100+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:08:50.337487+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:10:10.557792+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:10:55.042670+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:12:23.285244+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:13:54.917402+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:14:44.128602+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:14:58.356436+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:17:35.601983+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:17:35.603014+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:17:46.171499+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:18:53.293489+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:18:53.295177+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:19:53.636958+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:23:57.791467+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:23:57.796178+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:23:57.853510+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:23:57.854378+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:23:57.855205+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:25:04.023336+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:25:22.593323+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:26:03.026288+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:26:44.138042+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:27:14.437943+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:27:43.448021+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:29:36.026865+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "105",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:30:06.354591+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:31:46.786980+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:32:07.004414+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.452402+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.454706+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.456520+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.457800+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.458978+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.460120+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.461130+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:38:52.478007+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:41:38.947557+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:43:05.631836+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:45:12.812670+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:46:01.959080+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:46:37.907108+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:48:08.308166+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:48:34.177014+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:48:49.393342+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:49:09.589248+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:49:39.695341+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:49:58.787755+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:50:18.977994+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:50:29.125412+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:50:50.108925+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:51:21.991707+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:51:39.964140+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:52:11.559328+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:52:52.665324+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:54:42.539142+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:55:43.837412+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:56:53.844070+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:57:16.187888+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T19:57:54.601969+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:00:17.841156+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:00:56.546772+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:01:19.154078+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:01:39.274332+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:02:39.763204+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:04:49.508619+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:06:11.637561+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:06:52.091250+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:10:35.040090+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:11:05.379548+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:11:34.333872+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:28:09.072027+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:29:16.020875+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:30:28.335794+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:31:17.514288+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:32:49.842820+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:33:30.295265+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:34:09.357392+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:35:22.766410+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:36:24.175259+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:37:25.515223+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:38:32.792355+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:39:55.024100+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "105",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:41:14.542917+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "104",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:41:44.839710+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "103",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:42:26.068308+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "102",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:43:47.469613+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "101",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:44:36.647850+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "100",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:45:27.847238+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:46:39.619401+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:47:20.379864+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:48:39.945421+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:50:02.154720+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:51:31.751823+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:52:33.062949+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "99",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:54:13.453623+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "98",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T20:57:06.605097+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "97",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:00:08.620314+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:02:39.623022+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:06:33.441589+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:08:34.024938+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:08:46.161953+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "96",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:09:06.373690+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "95",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:09:24.548628+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:22:44.425946+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:29:38.863640+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:29:48.984536+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:30:07.840465+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "94",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:43:31.143246+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "93",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:44:58.728065+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "92",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T21:51:12.804147+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "91",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:00:49.551434+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "92",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:01:13.824740+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "91",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:01:40.768992+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "90",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:18:52.387765+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:31:56.472165+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "90",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:52:27.713750+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "87",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T22:53:53.385423+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "86",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T23:03:13.977898+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "85",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T23:21:45.980686+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "84",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T23:35:46.255880+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T23:49:49.258080+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      },
+      {
+        "state": "84",
+        "attributes": {
+          "state_class": "measurement",
+          "unit_of_measurement": "\u00b0F",
+          "device_class": "temperature",
+          "friendly_name": "Pentair: 21-CE-68 Air temperature"
+        },
+        "last_updated": "2026-05-07T23:59:45.235890+00:00",
+        "entity_id": "sensor.pentair_21_ce_68_air_temperature"
+      }
+    ],
+    "climate.pentair_21_ce_68_spa_heat": [
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:09:19.180893+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:14:54.939080+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:30:10.939486+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:32:48.014227+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:37:04.757480+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:37:40.676266+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:37:51.003541+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:41:00.492973+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:42:24.843424+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:45:08.989337+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:49:54.258406+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:50:17.191598+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:50:22.520643+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:54:18.452956+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T18:57:14.304040+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:00:48.605808+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:05:41.222763+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:06:28.464631+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:10:55.042403+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:14:58.356242+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 101,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:18:07.728402+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:20:16.768463+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:25:04.023170+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:32:44.232565+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:32:46.490556+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:41:38.947342+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:45:12.812459+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:48:34.176807+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:50:29.125248+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T19:51:21.991508+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:00:03.753310+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 85,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:01:05.039514+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 84,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:01:19.153425+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 83,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:01:47.536109+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 84,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:03:21.772265+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 85,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:06:31.845295+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 86,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:10:35.039586+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:28:09.072438+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 86,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:29:16.021541+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 90,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:30:28.335485+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 91,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:30:37.143627+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 92,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:34:21.458288+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 93,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:38:53.691545+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 94,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:42:36.105373+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 95,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:47:10.289895+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 96,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:51:43.965451+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 97,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:55:03.964250+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T20:59:07.262228+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:02:18.110118+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:03:21.381272+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:06:12.478629+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 100,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:07:52.917277+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:11:15.013834+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:29:57.783960+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 97,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T21:53:56.513820+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:16:51.812024+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:21:15.831778+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:23:56.882328+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:31:56.472506+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 99,
+          "temperature": 99,
+          "hvac_action": "idle",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:52:27.714491+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T22:53:53.385022+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 100,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:00:24.462242+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 101,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:08:20.502458+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 98,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:08:31.633706+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 97,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:12:50.315986+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:49:49.258565+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      },
+      {
+        "state": "heat",
+        "attributes": {
+          "current_temperature": 97,
+          "temperature": 99,
+          "hvac_action": "heating",
+          "preset_mode": "heater",
+          "friendly_name": "Pentair: 21-CE-68 Spa heat"
+        },
+        "last_updated": "2026-05-07T23:59:45.236387+00:00",
+        "entity_id": "climate.pentair_21_ce_68_spa_heat"
+      }
+    ],
+    "switch.pentair_21_ce_68_spa": [
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:09:19.183842+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:30:10.939917+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:32:48.015180+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:37:04.758174+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:41:00.493410+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:42:24.844533+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:45:08.990320+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:49:54.259198+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:54:18.453873+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T18:57:14.304561+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:00:48.606618+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:05:41.223223+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:10:55.043574+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:14:58.357062+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:25:04.024024+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:41:38.948236+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:45:12.813370+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:48:34.177746+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:50:29.126035+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T19:51:21.992377+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "on",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T20:00:03.613131+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T20:28:09.072115+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "on",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T20:29:16.020972+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T22:31:56.472225+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "on",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T22:52:27.713874+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T23:49:49.258227+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      },
+      {
+        "state": "on",
+        "attributes": {
+          "friendly_name": "Pentair: 21-CE-68 Spa"
+        },
+        "last_updated": "2026-05-07T23:59:45.235972+00:00",
+        "entity_id": "switch.pentair_21_ce_68_spa"
+      }
+    ]
+  }
+}
