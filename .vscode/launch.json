@@ -15,7 +15,7 @@
             "justMyCode": false,
             "pathMappings": [
                 {
-                    "localRoot": "/workspaces/pool_esp/custom_components/pool_esp",
+                    "localRoot": "/workspaces/ha_screenlogic_esp/custom_components/pool_esp",
                     "remoteRoot": "/config/custom_components/pool_esp"
                 }
             ]

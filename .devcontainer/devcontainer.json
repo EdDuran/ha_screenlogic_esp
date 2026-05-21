@@ -3,7 +3,7 @@
 
   "image": "ghcr.io/home-assistant/home-assistant:stable",
 
-  "workspaceFolder": "/workspaces/pool_esp",
+  "workspaceFolder": "/workspaces/ha_screenlogic_esp",
 
   "forwardPorts": [8123],
 

@@ -6,18 +6,19 @@ mkdir -p /config/custom_components
 mkdir -p /config/.storage
 
 # Symlink integration
-ln -sf /workspaces/pool_esp/custom_components/pool_esp /config/custom_components/pool_esp
+ln -sf /workspaces/ha_screenlogic_esp/custom_components/pool_esp /config/custom_components/pool_esp
 
 # Copy config files
-cp /workspaces/pool_esp/.devcontainer/config/configuration.yaml /config/configuration.yaml
+cp /workspaces/ha_screenlogic_esp/.devcontainer/config/configuration.yaml /config/configuration.yaml
 
 # Copy rate viewer
 mkdir -p /config/www/pool_esp
-cp /workspaces/pool_esp/www/esp_rate_viewer.html \
+cp /workspaces/ha_screenlogic_esp/www/esp_rate_viewer.html \
    /config/www/pool_esp/esp_rate_viewer.html
 
 # Restore dashboard
-cp /workspaces/pool_esp/.devcontainer/config/lovelace /config/.storage/lovelace
+cp /workspaces/ha_screenlogic_esp/.devcontainer/config/lovelace_dashboards /config/.storage/lovelace
+cp /workspaces/ha_screenlogic_esp/.devcontainer/config/lovelace.pool_esp /config/.storage/lovelace.pool_esp
 
 pip install homeassistant
 

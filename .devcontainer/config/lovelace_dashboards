@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace_dashboards",
+  "data": {
+    "items": [
+      {
+        "id": "pool_esp",
+        "show_in_sidebar": true,
+        "title": "Pool ESP",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "pool-esp"
+      }
+    ]
+  }
+}
