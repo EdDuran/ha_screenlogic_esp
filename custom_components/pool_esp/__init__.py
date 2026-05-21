@@ -261,18 +261,21 @@ async def _async_copy_www_assets(hass:HomeAssistant):
     dest_dir = hass.config.path("www", "pool_esp")
 
     def _copy():
-        os.makedirs(dest_dir, exist_ok=True)
-        if os.path.exists(source_dir):
-            for filename in os.listdir(source_dir):
-                src  = os.path.join(source_dir, filename)
-                dest = os.path.join(dest_dir, filename)
-                shutil.copy2(src, dest)
-                _LOG.debug(f"Copied {filename} to {dest}")
-        else:
-            _LOG.warning(f"www source not found: {source_dir}")
+        try:
+            _LOG.debug(f"Copying assets from {source_dir} to {dest_dir}...")
 
-    _LOG.debug(f"Copying www assets from {source_dir} to {dest_dir}...")
-    
+            os.makedirs(dest_dir, exist_ok=True)
+            if os.path.exists(source_dir):
+                for filename in os.listdir(source_dir):
+                    src  = os.path.join(source_dir, filename)
+                    dest = os.path.join(dest_dir, filename)
+                    shutil.copy2(src, dest)
+                    _LOG.info(f"Copied {filename} to {dest}")
+            else:
+                _LOG.warning(f"www source not found: {source_dir}")
+        except Exception as e:
+            _LOG.error(f"Failed to copy www assets: {e}")
+
     await hass.async_add_executor_job(_copy)
 
 ###

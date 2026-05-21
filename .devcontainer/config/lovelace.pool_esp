@@ -141,14 +141,28 @@
                       "type": "entity",
                       "entity": "sensor.pentair_21_ce_68_pool_esp",
                       "state_color": false,
-                      "attribute": "confidence_str",
+                      "attribute": "confidence_pct",
                       "name": "ESP Confidence"
                     },
                     {
                       "type": "entity",
                       "entity": "sensor.pentair_21_ce_68_spa_esp",
                       "state_color": false,
-                      "attribute": "confidence_str",
+                      "attribute": "confidence_pct",
+                      "name": "ESP Confidence"
+                    },
+                    {
+                      "type": "entity",
+                      "entity": "sensor.pentair_21_ce_68_pool_esp",
+                      "state_color": false,
+                      "attribute": "confidence",
+                      "name": "ESP Confidence"
+                    },
+                    {
+                      "type": "entity",
+                      "entity": "sensor.pentair_21_ce_68_spa_esp",
+                      "state_color": false,
+                      "attribute": "confidence",
                       "name": "ESP Confidence"
                     },
                     {
@@ -178,10 +192,13 @@
                       "name": "ESP State"
                     }
                   ],
-                  "columns": 2
+                  "columns": 2,
+                  "grid_options": {
+                    "columns": "full"
+                  }
                 }
               ],
-              "column_span": 1
+              "column_span": 2
             }
           ]
         }
