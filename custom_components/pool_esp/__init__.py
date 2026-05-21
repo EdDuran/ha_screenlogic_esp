@@ -25,6 +25,7 @@ from .test_runner import *
 import logging
 import debugpy
 import os
+import shutil
 
 _LOG = logging.getLogger(__name__)
 
@@ -234,18 +235,45 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     if config_entry.options.get(CONF_SHOW_PANEL, False):
         register_panel(hass)
 
-
-
     ###
     ### Register the ESP rates view
     ###
     hass.http.register_view(ESPRatesView())
 
+    ###
+    ### Copy www assets to HA's www folder for panel use
+    ### Note: This is a bit hacky, but it allows us to serve static assets for the panel without
+    ### needing to set up a custom static path or use the frontend integration's built-in static file handling
+    ### We can remove this once we have a better solution for serving static assets to the panel
+    ###
+    await _async_copy_www_assets(hass)
 
     _LOG.debug(f"..async_setup_entry: Done")
 
     return True
 
+async def _async_copy_www_assets(hass:HomeAssistant):
+    """Copy www files to /config/www/pool_esp on every startup."""
+    
+    source_dir = hass.config.path(
+        "custom_components", "pool_esp", "www"
+    )
+    dest_dir = hass.config.path("www", "pool_esp")
+
+    def _copy():
+        os.makedirs(dest_dir, exist_ok=True)
+        if os.path.exists(source_dir):
+            for filename in os.listdir(source_dir):
+                src  = os.path.join(source_dir, filename)
+                dest = os.path.join(dest_dir, filename)
+                shutil.copy2(src, dest)
+                _LOG.debug(f"Copied {filename} to {dest}")
+        else:
+            _LOG.warning(f"www source not found: {source_dir}")
+
+    _LOG.debug(f"Copying www assets from {source_dir} to {dest_dir}...")
+    
+    await hass.async_add_executor_job(_copy)
 
 ###
 ### ----- Remove Config Entry Device
