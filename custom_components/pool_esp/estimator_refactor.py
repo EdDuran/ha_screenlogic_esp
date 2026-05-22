@@ -618,7 +618,7 @@ class ESPEstimator:
                     skipped_no_air += 1
                     continue
 
-                table.setdefault(air_bin(avg_air), []).append(chunk_min / chunk_deg)
+                table.setdefault(air_bin(avg_air), []).append([chunk_min / chunk_deg, chunk_end_ts])
                 total_chunks += 1
 
         return {

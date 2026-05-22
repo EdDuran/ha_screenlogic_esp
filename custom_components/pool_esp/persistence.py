@@ -121,8 +121,8 @@ class Persistence:
             pruned  += before - len(existing)
 
             # Add new samples with timestamp
-            for sample in new_samples:
-                existing.append([sample, now_ts])
+            for sample_rate, sample_ts in new_samples:
+                existing.append([sample_rate, sample_ts])
                 merged += 1
 
             # Cap to max — keep most recent
