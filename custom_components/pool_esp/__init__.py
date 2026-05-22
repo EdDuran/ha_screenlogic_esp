@@ -138,9 +138,17 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN in config:
         hass.data[DOMAIN]["yaml_config"] = config[DOMAIN]
 
+
     # Return boolean to indicate that initialization was successful.
     return True
 
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    _LOG.info(f"__init__.async_setup")
+
+    await _async_copy_www_assets(hass)
+
+    # Return boolean to indicate that initialization was successful.
+    return True
 
 ###
 ### ----- Setup Integration ----------------------------------------------------
@@ -239,14 +247,6 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ### Register the ESP rates view
     ###
     hass.http.register_view(ESPRatesView())
-
-    ###
-    ### Copy www assets to HA's www folder for panel use
-    ### Note: This is a bit hacky, but it allows us to serve static assets for the panel without
-    ### needing to set up a custom static path or use the frontend integration's built-in static file handling
-    ### We can remove this once we have a better solution for serving static assets to the panel
-    ###
-    await _async_copy_www_assets(hass)
 
     _LOG.debug(f"..async_setup_entry: Done")
 
