@@ -4,6 +4,7 @@ set -xe
 # Create config structure
 mkdir -p /config/custom_components
 mkdir -p /config/.storage
+mkdir -p /config/test
 
 # Symlink integration
 ln -sf /workspaces/ha_screenlogic_esp/custom_components/pool_esp /config/custom_components/pool_esp
@@ -19,6 +20,9 @@ cp /workspaces/ha_screenlogic_esp/www/esp_rate_viewer.html \
 # Restore dashboard
 cp /workspaces/ha_screenlogic_esp/.devcontainer/config/lovelace_dashboards /config/.storage/lovelace
 cp /workspaces/ha_screenlogic_esp/.devcontainer/config/lovelace.pool_esp /config/.storage/lovelace.pool_esp
+
+# Copy test scenarios and data
+cp /workspaces/ha_screenlogic_esp/test/* /config/test
 
 pip install homeassistant
 

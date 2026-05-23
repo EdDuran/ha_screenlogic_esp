@@ -23,7 +23,7 @@ _LOG = logging.getLogger(__name__)
 ### ---------------------------------------------------------------------------
 ###
 
-_PATH = "custom_components/pool_esp/test"
+_PATH = "test"  # /config/test
 
 async def run_scenario(hass, scenario_file, data_file):
     import time
