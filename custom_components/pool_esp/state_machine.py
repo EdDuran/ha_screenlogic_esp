@@ -7,7 +7,6 @@ from .coordinator import *
 from .const import *
 from .util import *
 from .timer import Timer, TimerCallback
-from .estimator import *
 
 _LOG = logging.getLogger(__name__)
 
@@ -144,7 +143,7 @@ async def _brick_off(context: Context) -> str:
             else:
                 estimator = ESPEstimator(context.coordinator, context.body_type)
                 esp: ESP = await estimator.calculate_wrapper(context)
-                _LOG.debug(f"ESP: [{esp.seconds} {esp.display_label}], confidence[{esp.confidence} is '{esp.confidence_label}']")
+                _LOG.debug(f"ESP: [{esp.seconds} {esp.display_label}], confidence[{esp.confidence}]")
 
                 context.esp = esp
                 context.status = esp.display_label

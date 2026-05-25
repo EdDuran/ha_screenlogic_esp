@@ -253,7 +253,6 @@ class ESP:
         self._hours = 0
         self._minutes = 0
         self._display_label = status
-        self._confidence_label = self.CONFIDENCE_NA
         self._format_esp()
 
     def __eq__(self, other, tolerance_seconds=300):  # 5 minute tolerance
@@ -265,7 +264,7 @@ class ESP:
         )
     
     def __str__(self) -> str:
-        return f"ESP: Seconds[{self.seconds}] {self.display_label} Confidence[{self.confidence}:{self.confidence_label}]"
+        return f"ESP: Seconds[{self.seconds}] {self.display_label} Confidence[{self.confidence}%]"
 
     def _format_esp(self):
         """
@@ -277,18 +276,6 @@ class ESP:
             self._days, remaining_minutes = divmod(total_minutes, 1440)  # 1440 min/day
             self._hours, self._minutes    = divmod(remaining_minutes, 60)
             self._display_label = self._DHM.substitute(d=self._days, h=f"{self._hours:02d}", m=f"{self._minutes:02d}") if self._days > 0 else self._HM.substitute(h=self._hours, m=f"{self._minutes:02d}")
-
-            if self._confidence >= 0.7:
-                self._confidence_label = self.CONFIDENCE_HIGH
-            elif self._confidence >= 0.4:
-                self._confidence_label = self.CONFIDENCE_MEDIUM
-            elif self._confidence > 0:
-                self._confidence_label = self.CONFIDENCE_LOW
-            else:
-                self._confidence_label = self.CONFIDENCE_NA
-
-    def is_confidence(self, value: str):
-        return self._confidence_label == value
 
     @property
     def seconds(self) -> int:
@@ -313,10 +300,6 @@ class ESP:
     @property
     def confidence_pct(self) -> float:
         return self._confidence * 100
-
-    @property
-    def confidence_label(self) -> str:
-        return self._confidence_label
     
     @property
     def display_label(self) -> str:

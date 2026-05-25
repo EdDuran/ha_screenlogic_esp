@@ -344,7 +344,7 @@ class ESPEstimator:
         execution_endtime = time.time()
         execution_duration = execution_endtime - execution_starttime
 
-        _LOG.debug(f"...ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f} {esp.confidence_label}]")
+        _LOG.debug(f"...ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f}]")
         _LOG.debug(f"...calculate: [{self._body_type}] Complete: {msg}")
         _LOG.debug(f"...calculate: [{self._body_type}] ESP Calculation took [{execution_duration:.1f}s]")
 

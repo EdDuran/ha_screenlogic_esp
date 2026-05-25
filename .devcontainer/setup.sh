@@ -26,6 +26,10 @@ cp /workspaces/ha_screenlogic_esp/test/* /config/test
 
 pip install homeassistant
 
+### Hass run command
+alias hass='hass -c /config'
+
 ### Enable stopping startup until debugger is started
-#export HA_DEBUG=true
+export HA_DEBUG=true
+
 

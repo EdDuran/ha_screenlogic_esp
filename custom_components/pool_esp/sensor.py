@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ctypes import cast
 import logging
 
@@ -8,13 +10,17 @@ from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDev
 from .util import *
 from .const import *
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .coordinator import ESPCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_add_entities):
     from .coordinator import ESPCoordinator
 
-    coordinator = hass.data[DOMAIN][config_entry.entry_id][ADDONS_COORDINATOR]
+    coordinator:ESPCoordinator = hass.data[DOMAIN][config_entry.entry_id][ADDONS_COORDINATOR]
 
     sensors = [
         ESPSensor(coordinator, BODY_TYPE_POOL),
@@ -26,7 +32,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_
     coordinator.add_sensor(BODY_TYPE_SPA, sensors[1])
 
 class ESPSensor(CoordinatorEntity, SensorEntity):
-
+    
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
         _LOGGER.info("ESPSensor.__init__")
         _LOGGER.debug(f"...BodyType[{body_type}]")
@@ -83,14 +89,7 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
             "body"           : self._body_type,
             "status"         : context.status,
             "seconds"        : esp.seconds,
-            "confidence_pct" : esp.confidence_pct,
-            "confidence"     : esp.confidence_label,
-            "water_temp"     : context.water_temp,
-            "setpoint"       : context.target_temp,
-            "air_temp"       : context.air_temp,
-            "climate_status" : context.climate_status,
-            "climate_mode"   : context.climate_mode,
-            "circuit"        : context.circuit
+            "confidence_pct" : esp.confidence_pct
         }
 
     @property

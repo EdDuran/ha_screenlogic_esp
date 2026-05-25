@@ -238,8 +238,7 @@ class ESPCoordinator(DataUpdateCoordinator):
             if esp is not None:
                 status = esp.display_label if (esp is not None) else "Unknown"
                 seconds = esp.seconds if (esp is not None) else 0
-                confidence = esp.confidence_label if (esp is not None) else "Unknown"
-                _LOG.debug(f"...Status[{status}] ESP[{seconds}] Confidence[{confidence}]")
+                _LOG.debug(f"...Status[{status}] ESP[{seconds}] Confidence[{esp.confidence}%]")
                 self.update_sensor(body_type)
             else:
                 _LOG.warning(f"...No ESP data available")

@@ -12,58 +12,48 @@
               "type": "grid",
               "cards": [
                 {
-                  "square": false,
-                  "type": "grid",
+                  "type": "vertical-stack",
                   "cards": [
                     {
-                      "square": false,
-                      "type": "grid",
+                      "type": "horizontal-stack",
                       "cards": [
                         {
                           "type": "markdown",
                           "content": "<center><h1><b>Pool</b></h1></center>"
-                        }
-                      ],
-                      "columns": 1
-                    },
-                    {
-                      "square": false,
-                      "type": "grid",
-                      "cards": [
+                        },
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_air_temperature",
+                          "name": "Air Temp"
+                        },
                         {
                           "type": "markdown",
                           "content": "<center><h1><b>Spa</b></h1></center>"
                         }
-                      ],
-                      "columns": 1
+                      ]
                     },
                     {
-                      "square": false,
-                      "type": "grid",
+                      "type": "horizontal-stack",
                       "cards": [
                         {
                           "type": "entity",
                           "entity": "switch.pentair_21_ce_68_pool",
-                          "name": "Circuit"
+                          "name": "Circuit",
+                          "icon": ""
                         },
                         {
                           "type": "entity",
                           "entity": "climate.pentair_21_ce_68_pool_heat",
-                          "name": "Heat"
+                          "name": "Heat",
+                          "icon": "mdi:heat-wave"
                         },
                         {
                           "type": "entity",
                           "entity": "climate.pentair_21_ce_68_pool_heat",
+                          "name": "Action",
                           "attribute": "hvac_action",
-                          "name": "Action"
-                        }
-                      ],
-                      "columns": 3
-                    },
-                    {
-                      "square": false,
-                      "type": "grid",
-                      "cards": [
+                          "icon": "mdi:fire"
+                        },
                         {
                           "type": "entity",
                           "entity": "switch.pentair_21_ce_68_spa",
@@ -72,25 +62,25 @@
                         {
                           "type": "entity",
                           "entity": "climate.pentair_21_ce_68_spa_heat",
-                          "name": "Heat"
+                          "name": "Heat",
+                          "icon": "mdi:heat-wave"
                         },
                         {
                           "type": "entity",
                           "entity": "climate.pentair_21_ce_68_spa_heat",
+                          "name": "Action",
                           "attribute": "hvac_action",
-                          "name": "Action"
+                          "icon": "mdi:fire"
                         }
-                      ],
-                      "columns": 3
+                      ]
                     },
                     {
-                      "square": false,
-                      "type": "grid",
+                      "type": "horizontal-stack",
                       "cards": [
                         {
                           "type": "entity",
-                          "entity": "sensor.pentair_21_ce_68_pool_esp",
-                          "attribute": "water_temp",
+                          "entity": "climate.pentair_21_ce_68_pool_heat",
+                          "attribute": "current_temperature",
                           "name": "Water"
                         },
                         {
@@ -99,18 +89,11 @@
                           "name": "Target",
                           "attribute": "temperature",
                           "icon": "mdi:coolant-temperature"
-                        }
-                      ],
-                      "columns": 2
-                    },
-                    {
-                      "square": false,
-                      "type": "grid",
-                      "cards": [
+                        },
                         {
                           "type": "entity",
-                          "entity": "sensor.pentair_21_ce_68_spa_esp",
-                          "attribute": "water_temp",
+                          "entity": "climate.pentair_21_ce_68_spa_heat",
+                          "attribute": "current_temperature",
                           "name": "Water"
                         },
                         {
@@ -120,81 +103,94 @@
                           "attribute": "temperature",
                           "icon": "mdi:coolant-temperature"
                         }
-                      ],
-                      "columns": 2
+                      ]
                     },
                     {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_pool_esp",
-                      "attribute": "status",
-                      "state_color": false,
-                      "name": "ESP Status"
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_pool_esp",
+                          "attribute": "status",
+                          "state_color": false,
+                          "name": "ESP Status"
+                        },
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_spa_esp",
+                          "attribute": "status",
+                          "state_color": false,
+                          "name": "ESP Status"
+                        }
+                      ]
                     },
                     {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_spa_esp",
-                      "attribute": "status",
-                      "state_color": false,
-                      "name": "ESP Status"
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_pool_esp",
+                          "state_color": false,
+                          "attribute": "seconds",
+                          "name": "ESP Seconds",
+                          "icon": "mdi:timer-check-outline"
+                        },
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_spa_esp",
+                          "state_color": false,
+                          "attribute": "seconds",
+                          "name": "ESP Seconds",
+                          "icon": "mdi:timer-check-outline"
+                        }
+                      ]
                     },
                     {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_pool_esp",
-                      "state_color": false,
-                      "attribute": "confidence_pct",
-                      "name": "ESP Confidence"
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_pool_esp",
+                          "state_color": false,
+                          "attribute": "confidence_pct",
+                          "name": "Confidence",
+                          "unit": "%",
+                          "icon": "mdi:brightness-percent"
+                        },
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_spa_esp",
+                          "state_color": false,
+                          "attribute": "confidence_pct",
+                          "name": "Confidence",
+                          "unit": "%",
+                          "icon": "mdi:brightness-percent"
+                        }
+                      ]
                     },
                     {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_spa_esp",
-                      "state_color": false,
-                      "attribute": "confidence_pct",
-                      "name": "ESP Confidence"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_pool_esp",
-                      "state_color": false,
-                      "attribute": "confidence",
-                      "name": "ESP Confidence"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_spa_esp",
-                      "state_color": false,
-                      "attribute": "confidence",
-                      "name": "ESP Confidence"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_pool_esp",
-                      "state_color": false,
-                      "attribute": "seconds",
-                      "name": "ESP Seconds"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_spa_esp",
-                      "state_color": false,
-                      "attribute": "seconds",
-                      "name": "ESP Seconds"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_pool_esp",
-                      "state_color": false,
-                      "name": "ESP State"
-                    },
-                    {
-                      "type": "entity",
-                      "entity": "sensor.pentair_21_ce_68_spa_esp",
-                      "state_color": false,
-                      "name": "ESP State"
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_pool_esp",
+                          "state_color": false,
+                          "name": "ESP State",
+                          "icon": "mdi:state-machine"
+                        },
+                        {
+                          "type": "entity",
+                          "entity": "sensor.pentair_21_ce_68_spa_esp",
+                          "state_color": false,
+                          "name": "ESP State",
+                          "icon": "mdi:state-machine"
+                        }
+                      ]
                     }
                   ],
-                  "columns": 2,
                   "grid_options": {
-                    "columns": "full"
+                    "columns": 15,
+                    "rows": 1
                   }
                 }
               ],
