@@ -285,6 +285,7 @@
   let pending    = {};    // pending deletions not yet confirmed
   let haUrl      = '';
   let haToken    = '';
+  let lastChecked = null;
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -452,7 +453,7 @@
 
       return `
         <tr id="row-${key.replace(/\|/g,'-')}" class="${deleted ? 'marked-delete' : ''}">
-          <td class="center cb-wrap"><input type="checkbox" ${deleted ? 'checked' : ''} onchange="toggleDelete('${key}',this.checked)"></td>
+          <td class="center cb-wrap"><input type="checkbox" ${deleted ? 'checked' : ''} onclick="handleCheckbox(event, '${key}')"></td>
           <td style="color:var(--text-dim)">${i + 1}</td>
           <td class="rate-val">${s[0].toFixed(4)}</td>
           <td class="ts-val">${new Date(s[1] * 1000).toLocaleString()}</td>
@@ -464,6 +465,49 @@
     document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     updateDeleteUI();
     renderGrid(rawData.bodies[activeBody]);
+  }
+
+
+  function handleCheckbox(event, key) {
+    const checked = event.target.checked;
+
+    if (event.shiftKey && lastChecked && lastChecked !== key) {
+        // Get all keys in current bin in order
+        const tbody   = document.getElementById('detailBody');
+        const rows    = Array.from(tbody.querySelectorAll('tr'));
+        const allKeys = rows.map(r => r.id.replace('row-', '').replace(/-/g, '|'));
+
+        // Find range between lastChecked and current
+        const lastIdx    = allKeys.indexOf(lastChecked);
+        const currentIdx = allKeys.indexOf(key);
+        const start      = Math.min(lastIdx, currentIdx);
+        const end        = Math.max(lastIdx, currentIdx);
+
+        // Apply checked state to entire range
+        for (let i = start; i <= end; i++) {
+            const rangeKey = allKeys[i];
+            const row      = document.getElementById('row-' + rangeKey.replace(/\|/g, '-'));
+            if (!row) continue;
+
+            const cb = row.querySelector('input[type=checkbox]');
+            if (cb) cb.checked = checked;
+
+            if (checked) pending[rangeKey] = true;
+            else delete pending[rangeKey];
+
+            row.classList.toggle('marked-delete', checked);
+        }
+    } else {
+        // Normal single click
+        if (checked) pending[key] = true;
+        else delete pending[key];
+
+        const row = document.getElementById('row-' + key.replace(/\|/g, '-'));
+        if (row) row.classList.toggle('marked-delete', checked);
+    }
+
+    lastChecked = key;
+    updateDeleteUI();
   }
 
   function closeDetail() {
