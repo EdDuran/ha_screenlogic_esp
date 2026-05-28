@@ -1,5 +1,6 @@
 {
   "name": "Pool ESP",
   "render_readme": true,
-  "filename": "global-cards.js"
+  "hide_default_branch": true,
+  "country": "US"
 }

@@ -1,0 +1,52 @@
+name: Auto Release on Version Bump
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Crucial for allowing the action to create a release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Parse manifest.json version
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' custom_components/*/manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if Release Exists
+        id: check_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            https://github.com{{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }})
+          if [ "$RESPONSE" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          generate_release_notes: true
+          body: |
+            Automated release for version ${{ steps.get_version.outputs.version }}.
+            See changes in the commit history.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
