@@ -5,6 +5,11 @@ import os
 import time
 import traceback
 from datetime import datetime
+from .bricks import STATE_TRANSITIONS
+from .const import ADDONS_COORDINATOR, DOMAIN
+from .coordinator import ESPCoordinator
+from .state_machine import StateMachine
+from .util import Context
 import debugpy
 
 from homeassistant.exceptions import (
@@ -12,9 +17,7 @@ from homeassistant.exceptions import (
     HomeAssistantError      # something went wrong — your fault
 )
 
-from .state_machine import *
-from .const import *
-from .util import HistoryAdapter
+from .util import ESP, HistoryAdapter
 
 _LOG = logging.getLogger(__name__)
 
@@ -102,7 +105,7 @@ class TestRunner:
                 context.set("timestamp", value)
 
                 ### Execute the State Machine
-                await esp_state_machine(context, cause=f"TESTING: {body_type} {self._scenario_file}")
+                await StateMachine(STATE_TRANSITIONS, context, f"TESTING: {body_type} {self._scenario_file}").execute()
 
                 _LOG.info(f"Step: t=[{step.get('t'):3d}], status=[{context.get('status'):8s}] {context.get('esp')}")
 

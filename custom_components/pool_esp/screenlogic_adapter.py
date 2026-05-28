@@ -84,7 +84,6 @@ class ScreenlogicAdapter(PoolAdapter):
         Returns a Map of BodyTypes -> a Map of EntityTypes -> Entity Ids
         """
 
-        _LOG.info(f"ScreenLogic Discovery: Start")
         dev_reg = dr.async_get(self._hass)
 
         sl_device = None
@@ -113,7 +112,7 @@ class ScreenlogicAdapter(PoolAdapter):
         # end for device
 
         if sl_device is None:
-            _LOG.warning(f"AutoDiscovery: No ScreenLogic Device found")
+            _LOG.warning(f"No ScreenLogic Device found")
             raise ESPException("No ScreenLogic device found")
 
 
@@ -136,7 +135,7 @@ class ScreenlogicAdapter(PoolAdapter):
             self._body_config[body_type] = self._get_config_by_body_type(body_type)
             self._watch_entities[body_type] = self._get_watch_entities_by_body_type(body_type)
         
-        _LOG.info(f"Discovery: Found ScreenLogic Device: {prefix}")
+        _LOG.info(f"Found ScreenLogic Device: {prefix}")
 
         return self._adapter_config
     

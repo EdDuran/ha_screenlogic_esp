@@ -2,6 +2,7 @@ import logging
 import time
 import traceback
 from weakref import WeakSet
+from .bricks import STATE_TRANSITIONS
 import debugpy
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +15,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from .const import *
 from .util import *
-from .state_machine import esp_state_machine
+from .state_machine import StateMachine
 from .heater_watchdog import HeaterWatchdog
 
 _LOG = logging.getLogger(__name__)
@@ -28,9 +29,9 @@ class ESPCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass:HomeAssistant, config_entry:ConfigEntry, pool_adapter:PoolAdapter) -> None:
         
-        _LOG.info(f"ESPCoordinator.__init__")
-        _LOG.debug(f"ConfigEntry: {type(config_entry)}:{config_entry}")
-        _LOG.debug(f"PoolAdapter: {type(pool_adapter)} {pool_adapter}")
+        _LOG.debug(f"ESPCoordinator.__init__")
+        _LOG.debug(f"...ConfigEntry: {type(config_entry)}:{config_entry}")
+        _LOG.debug(f"...PoolAdapter: {type(pool_adapter)} {pool_adapter}")
 
         super().__init__(
             hass,
@@ -47,7 +48,10 @@ class ESPCoordinator(DataUpdateCoordinator):
     @property
     def pool_adapter(self):
         return self._pool_adapter
-        
+    
+    def get_watchdog(self, body_type) -> HeaterWatchdog:
+        return self._watchdogs.get(body_type, None)
+    
     def add_sensor(self, body_type, sensor):
         """
         Add a Sensor Entity to the Coordinator's set of sensors to update when ESP changes
@@ -66,18 +70,18 @@ class ESPCoordinator(DataUpdateCoordinator):
     ###
     async def async_setup(self) -> None:
         """Called once after integration loads."""
-        _LOG.info(f"ESPCoordinator.async_setup")
-        _LOG.debug(f"PoolAdapter: {self._pool_adapter}")
+        _LOG.debug(f"ESPCoordinator.async_setup")
+        _LOG.debug(f"...PoolAdapter: {self._pool_adapter}")
 
         # Initialize Contexts and Config for Body Types
         for body_type in BODY_TYPES:
             config = self.get_config(body_type)
             _LOG.debug(f"...Config [{body_type}] : {config}")
 
-            context = Context(body_type)
+            context:Context = Context(body_type)
             context.config = config     # Context has a reference to Config
             context.coordinator = self  # Context has a reference to this Coordinator
-            context.hass = self.hass  # Context has a reference to the Home Assistant instance
+            context.hass = self.hass    # Context has a reference to the Home Assistant instance
             self._contexts[body_type] = context
 
         _LOG.debug(f"...WatchEntities: {self._watch_entities}")
@@ -112,7 +116,6 @@ class ESPCoordinator(DataUpdateCoordinator):
         ###
         for body_type in BODY_TYPES:
             context = self.get_context(body_type)
-            #_LOG.debug(f"...Context: {context}")
             await self._execute_with_current_data(context, "Initalization")
     
     def get_context(self, body_type: str) -> Context:
@@ -232,16 +235,17 @@ class ESPCoordinator(DataUpdateCoordinator):
             #
             # Execute State Machine - Bricks save STATUS & ESP in the Context
             #
-            await esp_state_machine(context, cause)
+            await StateMachine(STATE_TRANSITIONS,context, cause).execute()
 
             esp = context.esp
             if esp is not None:
-                status = esp.display_label if (esp is not None) else "Unknown"
-                seconds = esp.seconds if (esp is not None) else 0
-                _LOG.debug(f"...Status[{status}] ESP[{seconds}] Confidence[{esp.confidence}%]")
+                context.status = esp.status
+                context.confidence_pct = esp.confidence_pct
+                context.seconds = esp.seconds
+                _LOG.debug(f"...Status[{context.status}] seconds[{context.seconds}] Confidence[{context.confidence_pct}%]")
                 self.update_sensor(body_type)
             else:
-                _LOG.warning(f"...No ESP data available")
+                _LOG.error(f"...No ESP data available")
                 
         except Exception as e:
             _LOG.error(f"_execute_with_current_data: Error [{e}] Context[{context}]  ")
@@ -254,12 +258,11 @@ class ESPCoordinator(DataUpdateCoordinator):
     ###
     async def _handle_state_change(self, event: Event):
         """Equivalent to your @event_trigger handler."""
-        changes = None
         entity_id = event.data.get("entity_id")
 
         body_type = self._get_body_type_by_entity(entity_id)
         if not body_type:
-            _LOG.warning(f"ESPCoordinator._handle_state_change: Failed to find BodyType for Entity [{entity_id}]")
+            _LOG.warning(f"_handle_state_change: Failed to find BodyType for Entity [{entity_id}]")
             return
 
         # Filter — only process entities we care about
@@ -270,20 +273,15 @@ class ESPCoordinator(DataUpdateCoordinator):
         
         if entity_id in watch_entities:
             try:
-                _LOG.info(f"ESPCoordinator._handle_state_change: [{entity_id}]")
-
                 old_state = event.data.get("old_state")
                 new_state = event.data.get("new_state")
 
-                context = self.get_context(body_type)
-                context.changes = None
+                context:Context = self.get_context(body_type)
+                context.changes = self._what_changed(body_type, entity_id, old_state, new_state)
 
-                changes = self._what_changed(body_type, entity_id, old_state, new_state)
-                #_LOG.debug(f"...Changes: {changes}")
-                if len(changes) != 0:
-                    context.changes = changes
-                
-                await self._execute_with_current_data(context, changes)
+                _LOG.debug(f"_handle_state_change: [{body_type}] [{entity_id}->{context.changes}]")
+
+                await self._execute_with_current_data(context, context.changes)
             except Exception as e:
                 details = (f"ESPCoordinator._handle_state_change: Failed [{body_type}] Entity[{entity_id}]; {e}")
                 _LOG.info(details)
@@ -291,11 +289,8 @@ class ESPCoordinator(DataUpdateCoordinator):
                 raise ESPException("ERROR", details) from e
         # end if
 
-        # TODO Tell HA entities to update
-        # sensor.async_set_updated_data()
-
     async def _async_update_data(self):
-        _LOG.info(f"ESPCoordinator._async_update_data")
+        _LOG.debug(f"_async_update_data")
         #_LOG.debug(f"...Data: {self.data}")
         return self.data
 

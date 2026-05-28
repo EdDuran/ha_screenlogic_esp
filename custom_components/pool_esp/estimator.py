@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from .const import STATUS_LEARNING
 import debugpy
 
 from .persistence import Persistence
@@ -65,14 +66,6 @@ class LiveHistoryAdapter(HistoryAdapter):
         return self._body_type
 
 
-    
-
-
-
-    # -------------------------------------------------------------------------
-    # History helper
-    # -------------------------------------------------------------------------
-
     async def _fetch_all_history(self):
         from homeassistant.components.recorder import get_instance
 
@@ -85,6 +78,7 @@ class LiveHistoryAdapter(HistoryAdapter):
         )
 
         return history, start, end
+    
 
     @staticmethod
     def _fetch_history(hass, entity_ids, start_dt, end_dt) -> dict[str, list]:
@@ -138,14 +132,15 @@ class ESPEstimator:
         Returns: (days, hours, minutes, esp_seconds, formatted_esp)
         """
         try:
-            #_LOG.debug(f"...ConfigEntities[{self._config_entities}]")
-
             if context.history_adapter is None:
                 context.history_adapter = LiveHistoryAdapter(self._hass, context.body_type, self._coordinator, self._config_entities)
 
-            esp: ESP = await self.calculate(context.export,context.history_adapter)
+            esp:ESP = await self.calculate(context.export,context.history_adapter)
 
-            context.esp = esp
+            context.status = esp.status
+            context.confidence_pct = esp.confidence_pct
+            context.seconds = esp.seconds
+
             return esp
 
         except Exception as e:
@@ -166,7 +161,7 @@ class ESPEstimator:
         from homeassistant.components.recorder import get_instance
 
         body_config = self._coordinator.get_config(self._body_type)
-        _LOG.info(f"calculate: [{self._body_type}]")
+        _LOG.debug(f"calculate: [{self._body_type}]")
 
         instance  = get_instance(self._hass)
         execution_starttime = time.time()
@@ -230,7 +225,7 @@ class ESPEstimator:
 
             if not table:
                 detail = f"calculate: [{self._body_type}] No usable heating intervals yet — need more history"
-                _LOG.warning(f"calculate: [{self._body_type}] {detail}")
+                _LOG.debug(f"calculate: [{self._body_type}] {detail}")
                 return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
 
             ###
@@ -246,7 +241,7 @@ class ESPEstimator:
             ### After merging, reload the full rate
             table = persistence.get_rate_table()
 
-        except Exception:
+        except Exception as e:
             _LOG.error(traceback.format_exc())
             raise ESPException("ERROR", "calculate: Failed to build rate table") from e
 
@@ -322,7 +317,9 @@ class ESPEstimator:
 
         heater_note = "ON" if heater_is_on else "OFF. Estimate if started now"
 
-        esp = ESP(seconds, confidence)
+        esp = ESP(seconds, confidence, ESP.format_dhm(seconds))
+        esp.rate = rate
+        esp.degrees_remaining = degrees_remaining
 
         msg = (
             f"{esp.display_label} to {int(current_target)}F"
@@ -330,16 +327,6 @@ class ESPEstimator:
             f" air={round(current_air)}F"
             f" [heater {heater_note}]"
         )
-
-        ###
-        ### Start/Reset HeaterWatchdog based on current heater status and calculated rate
-        ###
-        if heater_is_on and rate:
-            self._coordinator._watchdogs[self._body_type].start(
-                current_water, rate, degrees_remaining
-            )
-        else:
-            self._coordinator._watchdogs[self._body_type].cancel()
 
         execution_endtime = time.time()
         execution_duration = execution_endtime - execution_starttime

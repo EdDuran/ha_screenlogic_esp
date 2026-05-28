@@ -1,4 +1,4 @@
-
+import traceback
 import logging
 import time
 from datetime import datetime, timedelta, timezone
@@ -24,7 +24,7 @@ class HeaterWatchdog:
     def __init__(self, coordinator, body_type):
         self._coordinator   = coordinator
         self._body_type     = body_type
-        self._unsub         = None      # cancel timer
+        self._unsub         = None    # cancel timer
         self._baseline_ts   = None    # when we started watching
         self._baseline_temp = None    # water temp when we started
         self._expected_rate = None    # min/deg from ESP calculation
@@ -63,10 +63,7 @@ class HeaterWatchdog:
         )
 
         _LOG.debug(
-            f"Watchdog.start: [{self._body_type}] "
-            f"baseline={current_temp:.1f}F rate={rate:.2f} "
-            f"degrees_remaining={degrees_remaining:.1f} "
-            f"check_in={check_min:.1f}min"
+            f"HeatingWatchdog: STARTED [{self._body_type}] baseline=[{current_temp:.1f}] rate=[{rate:.2f}] degrees_remaining[{degrees_remaining:.1f}] check_in[{check_min:.1f}min]"
         )
 
     def cancel(self):
@@ -74,39 +71,44 @@ class HeaterWatchdog:
         if self._unsub:
             self._unsub()
             self._unsub = None
+            _LOG.debug(f"HeatingWatchdog: CANCELLED [{self._body_type}]")
 
     async def _check(self, now):
         """Called when the watchdog timer fires."""
-        self._unsub = None
+        self.cancel()
 
-        body_config   = self._coordinator.get_config(self._body_type)
-        current_temp  = self._coordinator._get_current_value(body_config[WATER_TEMP])
-        heater_is_on  = (
-            self._coordinator._get_current_value(body_config[CLIMATE_STATUS]).lower() == HEATER_STATUS_HEATING_VALUE.lower()
-        )
+        try:
+            body_config   = self._coordinator.get_config(self._body_type)
+            current_temp  = self._coordinator._get_current_value(body_config[WATER_TEMP])
+            heater_is_on  = (
+                self._coordinator._get_current_value(body_config[CLIMATE_STATUS]).lower() == HEATER_STATUS_HEATING_VALUE.lower()
+            )
 
-        # If heater turned off naturally, cancel watchdog
-        if not heater_is_on:
-            _LOG.debug(f"Watchdog._check: [{self._body_type}] heater off, cancelling")
-            return
+            # If heater turned off naturally, cancel watchdog
+            if not heater_is_on:
+                _LOG.debug(f"Watchdog._check: [{self._body_type}] heater off, cancelling")
+                return
 
-        elapsed_min   = (time.time() - self._baseline_ts) / 60.0
-        expected_rise = elapsed_min / self._expected_rate  # degrees we should have gained
-        actual_rise   = current_temp - self._baseline_temp
+            elapsed_min   = (time.time() - self._baseline_ts) / 60.0
+            expected_rise = elapsed_min / self._expected_rate  # degrees we should have gained
+            actual_rise   = current_temp - self._baseline_temp
 
-        _LOG.debug(
-            f"Watchdog._check: [{self._body_type}] "
-            f"elapsed={elapsed_min:.1f}min "
-            f"expected_rise={expected_rise:.2f}F "
-            f"actual_rise={actual_rise:.2f}F"
-        )
+            _LOG.debug(
+                f"Watchdog._check: [{self._body_type}] "
+                f"elapsed={elapsed_min:.1f}min "
+                f"expected_rise={expected_rise:.2f}F "
+                f"actual_rise={actual_rise:.2f}F"
+            )
 
-        if actual_rise < (expected_rise * WATCHDOG_THRESHOLD):
-            # Temperature not rising as expected — flag it
-            await self._flag_heater_issue(current_temp, expected_rise, actual_rise)
-        else:
-            # Performing OK — reschedule for next check
-            self.start(current_temp, self._expected_rate)
+            if actual_rise < (expected_rise * WATCHDOG_THRESHOLD):
+                # Temperature not rising as expected — flag it
+                await self._flag_heater_issue(current_temp, expected_rise, actual_rise)
+            else:
+                # Performing OK — reschedule for next check
+                self.start(current_temp, self._expected_rate)
+        except Exception as e:
+            _LOG.error(traceback.format_exc())
+            _LOG.error(f"Watchdog._check: [{self._body_type}] failed to execute: {e}")
 
     async def _flag_heater_issue(self, current_temp, expected_rise, actual_rise):
         """Raise a persistent HA issue for the heater problem."""

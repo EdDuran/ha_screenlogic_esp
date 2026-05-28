@@ -52,6 +52,8 @@ CONTEXT_CONFIG              = "config"          # Body Config
 CONTEXT_MACHINE_STATE       = "machine_state"   # State Machine state
 CONTEXT_ESP                 = "esp"             # ESP Object
 CONTEXT_STATUS              = "status"          # State Machine Status
+CONTEXT_SECONDS             = "seconds"         # ESP Seconds Remaining
+CONTEXT_CONFIDENCE_PCT      = "confidence"      # ESP Confidence
 CONTEXT_TIMESTAMP           = "timestamp"       # Current data Timestamp
 CONTEXT_WATER_TEMP          = "water_temp"      # Body Water Temp
 CONTEXT_TARGET_TEMP         = "target_temp"     # Body Target Water Temp
@@ -103,18 +105,7 @@ SM_START = "$START"     # Special case for First Brick to execute
 SM_EXIT  = "$EXIT"      # Special case for Exiting the State Machine
 SM_BRICK = "$BRICK"     # Special case for defining Brick Function
 SM_NAME  = "$NAME"      # The Name of the State
-
-###
-### State Machine States
-###
-STATE_OFF         = "off"
-STATE_ENABLED     = "enabled"
-STATE_SENSING     = "sensing"
-STATE_STANDBY     = "standby"
-STATE_HEATING     = "heating"
-STATE_READY       = "ready"
-STATE_MAINTAINING = "maintaining"
-STATE_DISABLED    = "disabled"
+SM_RESULT_WILDCARD = "$RESULT_WILDCARD"  # Special case for defining a Wildcard Result in the Transition Table (i.e. default transition if no specific result match is found)
 
 ###
 ### Results returned by Bricks
@@ -123,7 +114,6 @@ RESULT_OFF          = "OFF"
 RESULT_ACTIVE       = "ACTIVE"
 RESULT_STANDBY      = "STANDBY"
 RESULT_TARGETCHANGE = "TARGETCHANGE"
-RESULT_WILDCARD     = "*"
 
 ###
 ### Status values displayed in Home Assistant
@@ -135,6 +125,7 @@ STATUS_LEARNING         = "Learning"        # Insufficent Heat/Air/Water data
 STATUS_HEATING          = "Heating"         # Circuit/Heat is On and Heating
 STATUS_READY            = "Ready"           # Reached Set Point; only occurs once
 STATUS_DISABLED         = "Disabled"        # Heater Disabled
+
 
 STATUS_ERROR            = "Error"           # An error has occurred 
 

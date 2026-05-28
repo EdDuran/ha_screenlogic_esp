@@ -3,6 +3,7 @@ from __future__ import annotations
 from ctypes import cast
 import logging
 
+from custom_components.pool_esp.bricks import STATE_OFF, STATE_ENABLED, STATE_SENSING, STATE_HEATING, STATE_READY, STATE_MAINTAINING, STATE_STANDBY, STATE_DISABLED
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import DeviceInfo, HomeAssistant
 from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDeviceClass
@@ -15,7 +16,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .coordinator import ESPCoordinator
 
-_LOGGER = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_add_entities):
     from .coordinator import ESPCoordinator
@@ -34,8 +35,6 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_
 class ESPSensor(CoordinatorEntity, SensorEntity):
     
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
-        _LOGGER.info("ESPSensor.__init__")
-        _LOGGER.debug(f"...BodyType[{body_type}]")
 
         super().__init__(coordinator)
 
@@ -60,10 +59,9 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """The State Machine state string."""
-        #_LOGGER.info("ESPSensor.native_value")
         context:Context = self.coordinator.contexts.get(self._body_type)
         if context is None:
-            _LOGGER.error(f"ESPSensor.native_value: Context is None for body type {self._body_type}")
+            _LOG.error(f"ESPSensor.native_value: Context is None for body type {self._body_type}")
             return None
         
         return context.machine_state
@@ -71,37 +69,35 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         """All the attributes."""
-        #_LOGGER.info("ESPSensor.extra_state_attributes")
         context:Context = self.coordinator.get_context(self._body_type)
         if context is None:
-            _LOGGER.error(f"ESPSensor.extra_state_attributes: Context is None for body type {self._body_type}")
+            _LOG.error(f"ESPSensor.extra_state_attributes: Context is None for body type [{self._body_type}]")
             return {}
         
         esp = context.esp
         if esp is None:
-            _LOGGER.error(f"ESPSensor.extra_state_attributes: ESP is None for body type {self._body_type}")
+            _LOG.error(f"ESPSensor.extra_state_attributes: ESP is None for body type [{self._body_type}]")
             return {}
         
         if type(esp) is not ESP:
-            _LOGGER.error(f"ESPSensor.extra_state_attributes: ESP is not of type ESP for body type {self._body_type}")
+            _LOG.error(f"ESPSensor.extra_state_attributes: ESP is not of type ESP for body type [{self._body_type}]")
+            return {}
         
         return {
             "body"           : self._body_type,
             "status"         : context.status,
-            "seconds"        : esp.seconds,
-            "confidence_pct" : esp.confidence_pct
+            "seconds"        : context.seconds,
+            "confidence_pct" : context.confidence_pct
         }
 
     @property
     def device_info(self):
         """Links this entity to the Pentair device."""
-        #_LOGGER.info("ESPSensor.device_info")
 
         adapter_config = self.coordinator.adapter_config
         prefix = adapter_config[POOL_PREFIX]
         identifiers = {(DOMAIN, adapter_config[POOL_ID])}
         name = adapter_config[POOL_NAME]
-        #_LOGGER.debug(f"...Identifier[{identifiers}] Name[{name}]")
 
         device_info = DeviceInfo(
             identifiers=identifiers,
@@ -110,8 +106,6 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
             model="Pentair ScreenLogic"
             ##via_device=(SCREENLOGIC_DOMAIN, config[CONFIG_SCREENLOGIC_ID]),
         )
-
-        #_LOGGER.debug(f"...DeviceInfo: {device_info}")
 
         return device_info
 

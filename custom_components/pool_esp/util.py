@@ -3,6 +3,7 @@ import logging
 from string import Template
 from abc import ABC, abstractmethod
 
+from .const import RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, SM_START
 import homeassistant
 from .const import *
 from .timer import Timer
@@ -236,15 +237,6 @@ class ESP:
     """
     The Results of calculating the ESP
     """
-
-    _DHM = Template("$d-$h:$m")
-    _HM  = Template("$h:$m")
-
-    CONFIDENCE_NA       = "n/a"
-    CONFIDENCE_LOW      = "low"
-    CONFIDENCE_MEDIUM   = "medium"
-    CONFIDENCE_HIGH     = "high"
-
     def __init__(self, seconds:int, confidence: float, status:str = None):
         self._seconds = seconds
         self._confidence = confidence
@@ -253,7 +245,6 @@ class ESP:
         self._hours = 0
         self._minutes = 0
         self._display_label = status
-        self._format_esp()
 
     def __eq__(self, other, tolerance_seconds=300):  # 5 minute tolerance
         if not isinstance(other, ESP):
@@ -266,16 +257,28 @@ class ESP:
     def __str__(self) -> str:
         return f"ESP: Seconds[{self.seconds}] {self.display_label} Confidence[{self.confidence}%]"
 
-    def _format_esp(self):
+    @staticmethod
+    def format_dhm(seconds) -> str:
         """
         Get the ESP (in seconds) as the number of
         Days, Hours, Minutes and Formatted ESP: [DDD-]HH:MM
         """
-        if self._display_label is None: # Formatted strings already?
-            total_minutes = int(round(self._seconds / 60))    
-            self._days, remaining_minutes = divmod(total_minutes, 1440)  # 1440 min/day
-            self._hours, self._minutes    = divmod(remaining_minutes, 60)
-            self._display_label = self._DHM.substitute(d=self._days, h=f"{self._hours:02d}", m=f"{self._minutes:02d}") if self._days > 0 else self._HM.substitute(h=self._hours, m=f"{self._minutes:02d}")
+        _DHM = Template("$d-$h:$m")
+        _HM  = Template("$h:$m")
+        total_minutes = int(round(seconds / 60))  
+        days, remaining_minutes = divmod(total_minutes, 1440)  # 1440 min/day
+        hours, minutes    = divmod(remaining_minutes, 60)
+        return _DHM.substitute(d=days, h=f"{hours:02d}", m=f"{minutes:02d}") if days > 0 else _HM.substitute(h=hours, m=f"{minutes:02d}")
+
+    @staticmethod
+    def format_ms(seconds) -> str:
+        """
+        Get the ESP (in seconds) as the number of
+        Minutes and Seconds as Formatted ESP: MM:SS
+        """
+        minutes, remaining_seconds = divmod(seconds, 60)  # 1440 min/day
+        _MS  = Template("$m:$s")
+        return _MS.substitute(m=minutes, s=f"{remaining_seconds:02d}")
 
     @property
     def seconds(self) -> int:
@@ -294,21 +297,36 @@ class ESP:
         return self._minutes
 
     @property
-    def confidence(self) -> float:
-        return self._confidence
-
-    @property
     def confidence_pct(self) -> float:
         return self._confidence * 100
     
     @property
+    def confidence(self) -> float:
+        return self._confidence
+
+    @property
     def display_label(self) -> str:
-        return self._display_label
+        return ESP.format_dhm(self._seconds)
     
     @property
     def status(self) -> str:
         return self._status
+    
+    @property
+    def rate(self) -> float:
+        return self._rate
 
+    @rate.setter
+    def rate(self, value):
+        self._rate = value
+
+    @property
+    def degrees_remaining(self) -> float:
+        return self._degrees_remaining
+    
+    @degrees_remaining.setter
+    def degrees_remaining(self, value):
+        self._degrees_remaining = value 
 
 
 ###
@@ -392,6 +410,24 @@ class Context():
     @status.setter
     def status(self, value):
         self._context[CONTEXT_STATUS] = value
+
+
+    @property
+    def seconds(self) -> int:
+        return self._context.get(CONTEXT_SECONDS, None)
+
+    @seconds.setter
+    def seconds(self, value):
+        self._context[CONTEXT_SECONDS] = value
+
+
+    @property
+    def confidence_pct(self) -> float:
+        return self._context.get(CONTEXT_CONFIDENCE_PCT, None)
+
+    @confidence_pct.setter
+    def confidence_pct(self, value):
+        self._context[CONTEXT_CONFIDENCE_PCT] = value
 
 
     @property
@@ -617,21 +653,8 @@ class Context():
             result = RESULT_ACTIVE
 
         return result
+    
 # end class Context
-
-def get_formatted_esp(seconds):
-    """
-    Get the ESP (from seconds) as the number of
-    Days, Hours, Minutes and Formatted ESP
-    """
-    total_minutes = int(round(seconds / 60))    
-    days,    remaining_minutes = divmod(total_minutes, 1440)  # 1440 min/day
-    hours,   mins              = divmod(remaining_minutes, 60)
-
-    if days > 0:
-        return days, hours, mins, f"{days}-{hours:02d}:{mins:02d}"
-    else:
-        return days, hours, mins, f"{hours}:{mins:02d}"
 
 
 

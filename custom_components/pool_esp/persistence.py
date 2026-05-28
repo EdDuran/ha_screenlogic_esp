@@ -54,8 +54,8 @@ class Persistence:
         """Load persistent data from HA storage."""
         self._data   = await self._store.async_load() or {}
         self._loaded = True
-        last_merge_ts = self._body_data().get("last_merge_ts", 0.0)
-        count = self._sample_count()
+        last_merge_ts = self.body_data.get("last_merge_ts", 0.0)
+        count = self.sample_count
         _LOG.debug(f"Persistence.async_load: [{self._body_type}] Samples[{count}] last_merge_ts=[{datetime.fromtimestamp(last_merge_ts, tz=timezone.utc).isoformat() if last_merge_ts else 'never'}]")
 
     async def async_save(self):
@@ -70,16 +70,18 @@ class Persistence:
     async def merge_and_save(self, new_table:dict, intervals:list, intervals_used:int):
         """
         Merge a freshly built rate table into persistent storage.
-        Called by Estimator after each _build_rate_table().
+        Called by Estimator after each Time the Rate Table is Built.
+        new_table: dict of {air_bin_int: [rate, ...]} with no timestamps
         intervals: list of (start_ts, end_ts) tuples from _extract_heater_on_intervals
             Only merges intervals newer than last_merge_ts to avoid duplicates.
+        intervals_used: count of intervals that contributed to new_table (for diagnostics)
         """
         if not self._loaded:
             await self.async_load()
 
         self._data["pool_type"] = self._pool_type
 
-        body_data = self._body_data()
+        body_data = self.body_data
         last_merge_ts  = body_data.get("last_merge_ts", 0.0)
         new_high_water = last_merge_ts
         rate_table = body_data.setdefault("rate_table", {})
@@ -106,11 +108,15 @@ class Persistence:
             new_high_water = max(e for _, e in closed_new)
             body_data["last_merge_ts"] = new_high_water
 
+        _LOG.debug(f"...HighWaterMark[{datetime.fromtimestamp(new_high_water, tz=timezone.utc).isoformat()}]")
+
         now_ts  = time.time()
         cutoff  = now_ts - (MAX_RATE_AGE_DAYS * 86400) # In seconds
         merged  = 0
         pruned  = 0
-
+        ###
+        ### For each Bin & Sample, merge into existing table, prune old samples, and cap to max per bin
+        ###
         for bin_key, new_samples in new_table.items():
             key      = str(bin_key)
             existing = rate_table.get(key, [])
@@ -122,8 +128,11 @@ class Persistence:
 
             # Add new samples with timestamp
             for sample_rate, sample_ts in new_samples:
-                existing.append([sample_rate, sample_ts])
-                merged += 1
+                _LOG.debug(f"...Mergin Bin[{bin_key}F] Rate[{sample_rate}] Timestamp[{datetime.fromtimestamp(sample_ts, tz=timezone.utc).isoformat()}]")
+                if (sample_ts >= new_high_water):  # Only merge samples from intervals newer than last high-water mark
+                    _LOG.debug(f"......YES")
+                    existing.append([sample_rate, sample_ts])
+                    merged += 1
 
             # Cap to max — keep most recent
             if len(existing) > MAX_SAMPLES_PER_BIN:
@@ -134,7 +143,7 @@ class Persistence:
         # Update metadata
         body_data["rate_table"]            = rate_table
         body_data["last_updated"]          = datetime.now(timezone.utc).isoformat()
-        body_data["sample_count"]          = self._sample_count()
+        body_data["sample_count"]          = self.sample_count
         body_data["last_merge_intervals"]  = intervals_used
         body_data["last_merge_added"]      = merged
         body_data["last_merge_pruned"]     = pruned
@@ -150,7 +159,7 @@ class Persistence:
         Return rate table in the format _weighted_rate() expects:
         {air_bin_int: [rate, ...]}  (timestamps stripped)
         """
-        body_data  = self._body_data()
+        body_data  = self.body_data
         rate_table = body_data.get("rate_table", {})
 
         return {
@@ -163,7 +172,7 @@ class Persistence:
         """
         Return data for display in HA Integrations page diagnostics.
         """
-        body_data  = self._body_data()
+        body_data  = self.body_data
         rate_table = body_data.get("rate_table", {})
 
         bins = {}
@@ -193,9 +202,11 @@ class Persistence:
     # Private helpers
     # -------------------------------------------------------------------------
 
-    def _body_data(self) -> dict:
+    @property
+    def body_data(self) -> dict:
         return self._data.setdefault(self._body_type, {})
 
-    def _sample_count(self) -> int:
-        rate_table = self._body_data().get("rate_table", {})
+    @property
+    def sample_count(self) -> int:
+        rate_table = self.body_data.get("rate_table", {})
         return sum(len(s) for s in rate_table.values())

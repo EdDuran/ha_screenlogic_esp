@@ -53,7 +53,7 @@ class ESPRatesView(HomeAssistantView):
         for body_type in BODY_TYPES:
             p = Persistence(hass, body_type)
             await p.async_load()
-            result["bodies"][body_type] = p._body_data()
+            result["bodies"][body_type] = p.body_data
         
         #_LOG.warning(f"__init__.ESPRatesView.get: query={request} result={result}")
 
@@ -192,12 +192,11 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     
     if yaml_config is None or adapter_name is None:
         adapter_name = DEFAULT_POOL_ADAPTER
-        _LOG.warning(f"configuration.yaml: pool_esp.adapter missing. Defaulting to [{adapter_name}]")
+        _LOG.debug(f"configuration.yaml: pool_esp.adapter missing. Defaulting to [{adapter_name}]")
 
     ## Create PoolAdapter and Discover it's Configuration
     try:
         pool_adapter:PoolAdapter = await PoolAdapter.create(hass, adapter_name)
-        _LOG.debug(f"Pool Adapter [{adapter_name}] created successfully with config: {pool_adapter}")
     except Exception as e:
         _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
 
