@@ -170,7 +170,7 @@ class ESPEstimator:
         try:
             history, start, end = await history_adapter.get_history()
             now_ts= history_adapter.now
-            _LOG.debug(f"...HistoryAdapter; Now: [{now_ts} / {datetime.fromtimestamp(now_ts).strftime('%Y-%m-%d %H:%M:%S')}]")
+            _LOG.debug(f"...HistoryAdapter; Now: [{now_ts} / {local_time(now_ts)}]")
 
             ###
             ### Export history data
@@ -445,7 +445,7 @@ class ESPEstimator:
 
         for ts, heat_state in heat_states:
             if heat_state is None or heat_state in ("unavailable", "unknown"):
-                _LOG.warning(f"...Skipping None/unavailable state at [{ts}]")
+                _LOG.debug(f"...Skipping None/unavailable state at [{ts}]")
                 continue
 
             is_on = heat_state.lower() == HEATER_STATUS_HEATING_VALUE.lower()
@@ -465,7 +465,7 @@ class ESPEstimator:
             duration_min = (end_ts - start_ts) / 60.0
             dt = datetime.fromtimestamp(start_ts)
             time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-            _LOG.debug(f"...start={start_ts:.0f}/{time_str} duration={duration_min:.1f} min is_open={is_open}")
+            _LOG.debug(f"...start[{start_ts:.0f} {time_str}] duration[{duration_min:4.1f}m] is_open[{is_open}]")
 
         return intervals
 
@@ -541,26 +541,26 @@ class ESPEstimator:
             duration_min = (end_ts - start_ts) / 60.0
             if duration_min < min_interval_minutes:
                 skipped_short += 1
-                _LOG.warning(f"...Skipping short interval: {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping short interval: {duration_min:.1f} min")
                 continue
 
             w_start = interpolate(water_temps, start_ts)
             w_end   = interpolate(water_temps, end_ts)
             if w_start is None or w_end is None:
                 skipped_no_water += 1
-                _LOG.warning(f"...Skipping interval with no water data at start or end: {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping interval with no water data at start or end: {duration_min:.1f} min")
                 continue
 
             degrees_gained = w_end - w_start
             if degrees_gained < min_degrees_gained:
                 skipped_no_rise += 1
-                _LOG.warning(f"...Skipping WaterTemp no-rise interval[{w_start} to {w_end}] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping WaterTemp no-rise interval[{w_start} to {w_end}] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
             rate_per_hour = degrees_gained / (duration_min / 60.0)
             if rate_per_hour < min_rate_deg_per_hour:
                 skipped_slow += 1
-                _LOG.warning(f"...Skipping slow interval: RatePerHour[{rate_per_hour:.2f}°/hr] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping slow interval: RatePerHour[{rate_per_hour:.2f}°/hr] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
             start_degree = int(w_start) + 1
@@ -662,7 +662,7 @@ class ESPEstimator:
         blending bins by proximity to target_bin.
         Returns (rate, confidence).
         """
-        _LOG.debug("weighted_rate")
+        _LOG.debug("weighted_rate:")
         total_weight = 0.0
         weighted_sum = 0.0
 
@@ -687,7 +687,7 @@ class ESPEstimator:
             if len(clean) == 1:
                 med    = clean[0]
                 weight = SINGLE_SAMPLE_SCORE * distance_weight
-                _LOG.debug(f"...[{bin_key}] single sample med={med:.2f} weight={weight:.2f} (low confidence)"
+                _LOG.debug(f"...[{bin_key:03d}F] single sample med={med:.2f} weight={weight:.2f} (low confidence)"
                 )
                 weighted_sum += med * weight
                 total_weight += weight

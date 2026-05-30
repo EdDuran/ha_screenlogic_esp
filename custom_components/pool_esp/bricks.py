@@ -55,9 +55,6 @@ async def _brick_off(context:Context) -> str:
             else:
                 estimator = ESPEstimator(context.coordinator, context.body_type)
                 context.esp = await estimator.calculate_wrapper(context)
-
-            _LOG.debug(f"OFF: esp[{context.esp.seconds} {context.esp.status}], confidence[{context.esp.confidence_pct}%]")
-
     except Exception as e:
         _LOG.error(f"_brick_off: Failed to execute: {e}")
         raise ESPException("ERROR", f"_brick_off: Failed to execute: {e}") from e
@@ -232,7 +229,6 @@ async def _brick_sensing(context:Context) -> str:
     import time
 
     result = context.get_esp_result()
-    _LOG.debug(f"..._brick_sensing: ESP Result is [{result}]")
 
     is_testing = context.testing
     if is_testing:
@@ -313,7 +309,7 @@ class SensingCallback(TimerCallback):
             context.confidence_pct = esp.confidence_pct
             context.coordinator.update_sensor(context.body_type)
 
-            _LOG.info(f"on_timer_interval: [{timer.name}] remaining[{context.seconds}/{context.status}]")
+            _LOG.debug(f"SensingCallback.on_timer_interval: [{timer.name}] remaining[{context.seconds}/{context.status}]")
 
     ###
     ### ----- on_timer_complete
@@ -324,7 +320,7 @@ class SensingCallback(TimerCallback):
         Scheduled by _brick_sensing when the settle timer starts.
         Re-evaluates the state machine.
         """
-        _LOG.info(f"on_timer_complete: {timer}")
+        _LOG.debug(f"SensingCallback.on_timer_complete: {timer}")
 
         context:Context = timer.context
         current_state = context.machine_state
@@ -353,7 +349,7 @@ class SensingCallback(TimerCallback):
 
     async def on_timer_cancelled(self, timer: Timer) -> None:
         """Called when timer is stopped externally."""
-        _LOG.info(f"on_timer_cancelled: [{timer.name}]")
+        _LOG.debug(f"on_timer_cancelled: [{timer.name}]")
 
 ###
 ### ----- Class HeatingCallback -----------------------------------------------
@@ -380,7 +376,7 @@ class HeatingCallback(TimerCallback):
             context.confidence_pct = esp.confidence_pct
             context.coordinator.update_sensor(context.body_type)
 
-            _LOG.info(f"on_timer_interval: [{timer.name}], remaining[{context.seconds}/{context.status}] confidence[{context.confidence_pct}]")
+            _LOG.debug(f"HeatingCallback.on_timer_interval: [{timer.name}], remaining[{context.seconds}/{context.status}] confidence[{context.confidence_pct}]")
 
 
     ###
@@ -392,7 +388,7 @@ class HeatingCallback(TimerCallback):
         Scheduled by _brick_sensing when the settle timer starts.
         Re-evaluates the state machine.
         """
-        _LOG.info(f"on_timer_complete: [{timer.name}]")
+        _LOG.debug(f"HeatingCallback.on_timer_complete: [{timer.name}]")
 
         context:Context = timer.context
         current_state = context.machine_state
@@ -419,7 +415,7 @@ class HeatingCallback(TimerCallback):
     ###
 
     async def on_timer_cancelled(self, timer: Timer) -> None:
-        _LOG.info(f"on_timer_cancelled: [{timer.name}]")
+        _LOG.debug(f"HeatingCallback.on_timer_cancelled: [{timer.name}]")
 
 
 # ---------------------------------------------------------------------------

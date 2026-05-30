@@ -1,19 +1,30 @@
 import logging
 import time
 import json
-from datetime import datetime, timezone
 from homeassistant.helpers.storage import Store
+from datetime import datetime, timezone
+
+from .util import local_time
 
 from .const import (
     DOMAIN,
+    HISTORY_DAYS,
     MAX_SAMPLES_PER_BIN,
     MAX_RATE_AGE_DAYS,
-    STORAGE_VERSION,
 )
 
 _LOG = logging.getLogger(__name__)
 
-STORAGE_KEY = f"{DOMAIN}_rates.json"
+KEY_STORAGE = f"{DOMAIN}_rates.json"
+KEY_STORAGE_VERSION = 1
+
+KEY_HIGHWATER_TS  = "highwater_ts"
+KEY_RATE_TABLE   = "rate_table"
+KEY_LAST_UPDATED = "last_updated"
+KEY_SAMPLE_COUNT = "sample_count"
+KEY_LAST_MERGE_INTERVALS = "last_merge_intervals"
+KEY_LAST_MERGE_ADDED     = "last_merge_added"
+KEY_LAST_MERGE_PRUNED    = "last_merge_pruned"
 
 
 class Persistence:
@@ -31,6 +42,7 @@ class Persistence:
                     "75": [[rate, timestamp], ...]
                 },
                 "last_updated": "2026-05-12T00:00:00+00:00",
+                "highwater_ts": 1234567890.0,
                 "sample_count": 42,
                 "last_merge_intervals": 3
             },
@@ -42,7 +54,7 @@ class Persistence:
         self._hass      = hass
         self._body_type = body_type
         self._pool_type = pool_type
-        self._store     = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._store     = Store(hass, KEY_STORAGE_VERSION, KEY_STORAGE)
         self._data      = {}  # full storage data (all body types)
         self._loaded    = False
 
@@ -52,11 +64,12 @@ class Persistence:
 
     async def async_load(self):
         """Load persistent data from HA storage."""
-        self._data   = await self._store.async_load() or {}
-        self._loaded = True
-        last_merge_ts = self.body_data.get("last_merge_ts", 0.0)
-        count = self.sample_count
-        _LOG.debug(f"Persistence.async_load: [{self._body_type}] Samples[{count}] last_merge_ts=[{datetime.fromtimestamp(last_merge_ts, tz=timezone.utc).isoformat() if last_merge_ts else 'never'}]")
+        if (not self._loaded):
+            self._data   = await self._store.async_load() or {}
+            self._loaded = True
+            self._highwater_ts = self.body_data.get(KEY_HIGHWATER_TS, 0.0)
+            count = self.sample_count
+            _LOG.debug(f"Persistence.async_load: [{self._body_type}] Samples[{count}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
 
     async def async_save(self):
         """Save persistent data to HA storage."""
@@ -67,72 +80,88 @@ class Persistence:
     # Public API
     # -------------------------------------------------------------------------
 
-    async def merge_and_save(self, new_table:dict, intervals:list, intervals_used:int):
+    async def merge_and_save(self, new_table: dict, intervals: list, intervals_used: int):
         """
         Merge a freshly built rate table into persistent storage.
-        Called by Estimator after each Time the Rate Table is Built.
-        new_table: dict of {air_bin_int: [rate, ...]} with no timestamps
-        intervals: list of (start_ts, end_ts) tuples from _extract_heater_on_intervals
-            Only merges intervals newer than last_merge_ts to avoid duplicates.
-        intervals_used: count of intervals that contributed to new_table (for diagnostics)
+        Called by Estimator after each time the Rate Table is built.
+
+        new_table:       dict of {air_bin_int: [(rate, ts), ...]}
+        intervals:       list of (start_ts, end_ts, is_open) tuples
+        intervals_used:  count of intervals that contributed to new_table (diagnostics)
+
+        Duplicate prevention:
+        - processed_intervals: set of end_ts values already merged — survives deletes
+        - Only closed intervals (is_open=False) are permanently recorded
+        - Open intervals contribute to current estimate but are re-evaluated next run
+        - High-water mark only advances if samples were actually merged
         """
-        if not self._loaded:
-            await self.async_load()
+
+
+
+        await self.async_load()
 
         self._data["pool_type"] = self._pool_type
 
-        body_data = self.body_data
-        last_merge_ts  = body_data.get("last_merge_ts", 0.0)
-        new_high_water = last_merge_ts
-        rate_table = body_data.setdefault("rate_table", {})
+        body_data     = self.body_data
+        rate_table    = body_data.setdefault(KEY_RATE_TABLE, {})
 
-        # Filter to only NEW intervals
-        new_intervals = [
-            (start, end, is_open) for start, end, is_open in intervals
-            if end > last_merge_ts
+        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
+
+        # --- Identify new closed intervals ---------------------------------------
+        new_closed = [
+            (start, end) for start, end, is_open in intervals
+            if not is_open and end > self._highwater_ts
         ]
-        if not new_intervals:
-            _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] no new intervals since last merge")
+
+        # Log open interval for visibility
+        open_interval = next(
+            ((start, end) for start, end, is_open in intervals if is_open),
+            None
+        )
+
+        if not new_closed:
+            _LOG.debug(f"...no new closed intervals since [{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
+            if open_interval:
+                start, end = open_interval
+                _LOG.debug(
+                    f"...open interval still active: "
+                    f"Start[{local_time(start)}] "
+                    f"Duration[{(end - start) / 60.0:.1f} min]"
+                )
             return
 
-        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] new intervals[{len(new_intervals)}] of {len(intervals)} total)")
-        for start, end, is_open in new_intervals:
-            ending_at = datetime.fromtimestamp(end, tz=timezone.utc).isoformat()
-            duration = (end - start) / 60.0
-            _LOG.debug(f"...Interval: End:[{ending_at}] Duration:[{duration:.1f} min] Open[{is_open}]")
+        for start, end in new_closed:
+            _LOG.debug(
+                f"...New Closed Interval: "
+                f"Start[{local_time(start)}] "
+                f"End[{local_time(end)}] "
+                f"Duration[{(end - start) / 60.0:.1f} min]"
+            )
 
-        # Update high-water mark to latest interval end
-        # BUT Only advance high-water mark for closed intervals
-        closed_new = [(s, e) for s, e, open_ in new_intervals if not open_]
-        if closed_new:
-            new_high_water = max(e for _, e in closed_new)
-            body_data["last_merge_ts"] = new_high_water
+        # --- Merge samples -------------------------------------------------------
+        now_ts = time.time()
+        cutoff = now_ts - (MAX_RATE_AGE_DAYS * 86400)
+        merged = 0
+        pruned = 0
 
-        _LOG.debug(f"...HighWaterMark[{datetime.fromtimestamp(new_high_water, tz=timezone.utc).isoformat()}]")
-
-        now_ts  = time.time()
-        cutoff  = now_ts - (MAX_RATE_AGE_DAYS * 86400) # In seconds
-        merged  = 0
-        pruned  = 0
-        ###
-        ### For each Bin & Sample, merge into existing table, prune old samples, and cap to max per bin
-        ###
         for bin_key, new_samples in new_table.items():
             key      = str(bin_key)
             existing = rate_table.get(key, [])
 
             # Prune stale samples
-            before  = len(existing)
+            before   = len(existing)
             existing = [s for s in existing if s[1] >= cutoff]
             pruned  += before - len(existing)
 
-            # Add new samples with timestamp
+            # Merge new samples
             for sample_rate, sample_ts in new_samples:
-                _LOG.debug(f"...Mergin Bin[{bin_key}F] Rate[{sample_rate}] Timestamp[{datetime.fromtimestamp(sample_ts, tz=timezone.utc).isoformat()}]")
-                if (sample_ts >= new_high_water):  # Only merge samples from intervals newer than last high-water mark
-                    _LOG.debug(f"......YES")
-                    existing.append([sample_rate, sample_ts])
-                    merged += 1
+                _LOG.debug(
+                    f"...Merging Bin[{bin_key}F] "
+                    f"Rate[{sample_rate:.2f}] "
+                    f"SampleTime[{local_time(sample_ts)}]"
+                )
+                existing.append([sample_rate, sample_ts])
+                merged += 1
 
             # Cap to max — keep most recent
             if len(existing) > MAX_SAMPLES_PER_BIN:
@@ -140,19 +169,41 @@ class Persistence:
 
             rate_table[key] = existing
 
-        # Update metadata
-        body_data["rate_table"]            = rate_table
-        body_data["last_updated"]          = datetime.now(timezone.utc).isoformat()
-        body_data["sample_count"]          = self.sample_count
-        body_data["last_merge_intervals"]  = intervals_used
-        body_data["last_merge_added"]      = merged
-        body_data["last_merge_pruned"]     = pruned
+        # --- Advance high-water mark ---------------------------------------------
+        if merged > 0:
+            new_highwater_ts = max(end for _, end in new_closed)
+            body_data[KEY_HIGHWATER_TS] = new_highwater_ts
+            _LOG.debug(
+                f"...high-water mark advanced to [{local_time(new_highwater_ts)}]"
+            )
+        else:
+            _LOG.warning(
+                f"Persistence.merge_and_save: [{self._body_type}] "
+                f"no samples merged despite {len(new_closed)} new closed intervals — "
+                f"high-water mark NOT advanced"
+            )
+
+        # --- Update metadata -----------------------------------------------------
+        body_data[KEY_RATE_TABLE]           = rate_table
+        body_data[KEY_LAST_UPDATED]         = datetime.now(timezone.utc).isoformat()
+        body_data[KEY_SAMPLE_COUNT]         = self.sample_count
+        body_data[KEY_LAST_MERGE_INTERVALS] = intervals_used
+        body_data[KEY_LAST_MERGE_ADDED]     = merged
+        body_data[KEY_LAST_MERGE_PRUNED]    = pruned
 
         self._data[self._body_type] = body_data
-
         await self.async_save()
 
-        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] merged[{merged}] pruned[{pruned}] total_samples=[{body_data['sample_count']}]")
+        _LOG.debug(
+            f"Persistence.merge_and_save: [{self._body_type}] "
+            f"merged[{merged}] pruned[{pruned}] "
+            f"total_samples[{body_data['sample_count']}]"
+        )
+
+
+
+
+
 
     def get_rate_table(self) -> dict:
         """

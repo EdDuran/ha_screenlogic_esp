@@ -32,4 +32,7 @@ alias hass='hass -c /config'
 ### Enable stopping startup until debugger is started
 export HA_DEBUG=true
 
+ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+echo "America/New_York" > /etc/timezone
+
 

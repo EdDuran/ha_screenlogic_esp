@@ -160,7 +160,6 @@ class ESPCoordinator(DataUpdateCoordinator):
         Return a set of what has changed between the old & new states
         <body_type>:[state|attr]:<value>
         """
-        #_LOG.info(f"_what_changed: {body_type} {entity_id}, {old_state} {new_state}")
         changes = set()
 
         if entity_id is not None and old_state is not None and new_state is not None:
@@ -212,14 +211,8 @@ class ESPCoordinator(DataUpdateCoordinator):
         Execute the State Machine with Current ScreenLogic data
         """
         try:
-            #_LOG.info(f"execute_with_current_data: Cause[{cause}]")
-
             body_type = context.body_type
-            #_LOG.debug(f"...BodyType[{body_type}]")
             config = context.config
-
-            #_LOG.debug(f"...Context: {context}")
-            #_LOG.debug(f"...Config : {config}")
 
             ### Load up Context with Current Data
             context.timestamp       = time.time()
@@ -284,7 +277,7 @@ class ESPCoordinator(DataUpdateCoordinator):
                 await self._execute_with_current_data(context, context.changes)
             except Exception as e:
                 details = (f"ESPCoordinator._handle_state_change: Failed [{body_type}] Entity[{entity_id}]; {e}")
-                _LOG.info(details)
+                _LOG.error(details)
                 _LOG.error(traceback.format_exc())
                 raise ESPException("ERROR", details) from e
         # end if

@@ -70,7 +70,6 @@ class StateMachine:
                         brick = current_transitions.get(SM_BRICK, None)
                         if brick is not None:
                             # Execute Brick, get Result
-                            _LOG.debug(f"...Execute [{current_state}] Brick[{brick.__name__}({name})]")
                             self._context.machine_state = current_state
                             result = await brick(self._context)
                         else:
@@ -85,7 +84,7 @@ class StateMachine:
                             if next_state is None:
                                 raise ESPException("ERROR", f"StateMachine: Failed to find TransitionState: State[{current_transitions}] Result[{result}]")
                         
-                        _LOG.debug(f"   == [{result}] --> NextState[{next_state}]")
+                        _LOG.debug(f"...[{current_state}] [{brick.__name__}({name})] --> [{result}] --> NextState[{next_state}]")
                     
                     except Exception as e:
                         _LOG.error(f"StateMachine: Failed to execute State [{current_state}]; {e}")
@@ -103,9 +102,9 @@ class StateMachine:
                     _LOG.error(f"State Machine: [{body_type}] No Transitions found for State:{current_state}")
                     raise ESPException("ERROR", f"State Machine: [{body_type}] No Transitions found for State:{current_state}")
             
-                _LOG.debug(f"...Breadcrumbs:{breadcrumbs}")
-
             # End While Executing State Machine
+
+            _LOG.debug(f"...Breadcrumbs:{breadcrumbs}")
 
             if iteration >= max_iterations:
                 _LOG.error(f"StateMachine: [{body_type}] Infinte Loop Detected; aborting State Machine")

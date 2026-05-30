@@ -1,17 +1,28 @@
+from datetime import datetime, timezone
 import importlib
 import logging
 from string import Template
 from abc import ABC, abstractmethod
+from zoneinfo import ZoneInfo
+from homeassistant.core import HomeAssistant
 
 from .const import RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, SM_START
-import homeassistant
 from .const import *
 from .timer import Timer
 
 _LOG = logging.getLogger(__name__)
 
 
-def parse_entity_change(changes: set):
+def local_time(ts:float, hass:HomeAssistant=None) -> str:
+    """
+    Convert a UTC timestamp to local time and return the local date and time as strings.
+    """
+    if hass:
+        tz = ZoneInfo(hass.config.time_zone)
+        return datetime.fromtimestamp(ts, tz=tz).strftime('%Y-%m-%d %H:%M:%S %Z')
+    return datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+def parse_entity_change(changes: set) -> tuple[str, str, str]:
     """
     Parse Entity Change and return components:
     BodyType, Attribute and Value
@@ -634,7 +645,7 @@ class Context():
                 _LOG.debug(f"...{body_type} : {attr} : {value}")
                 target_change = body_type == self.body_type and attr == ATTR_TEMP
 
-        _LOG.info(f"_is_target_change({self.changes})? --> [{target_change}]")
+        _LOG.debug(f"_is_target_change({self.changes})? --> [{target_change}]")
 
         return target_change
     
@@ -645,12 +656,9 @@ class Context():
             ACTIVE  Circuit On and Heater On
             STANDBY Circuit On and Heater Enabled
         """
-        result = RESULT_STANDBY
-
-        if not self.is_circuit_on() or not self.is_heat_enabled():
-            result = RESULT_OFF
-        if self.is_heating():
-            result = RESULT_ACTIVE
+        result = RESULT_OFF
+        if (self.is_circuit_on() and self.is_heat_enabled()):
+            result = RESULT_ACTIVE if self.is_heating() else RESULT_STANDBY
 
         return result
     

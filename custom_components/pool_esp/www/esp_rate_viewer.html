@@ -189,7 +189,7 @@
     <h1>ESP Rate Table <span>Viewer</span></h1>
     <div class="meta-bar" id="metaBar" style="display:none">
       <div class="meta-item">Updated: <strong id="metaUpdated">—</strong></div>
-      <div class="meta-item">Last Merge: <strong id="metaIntervals">—</strong></div>
+      <div class="meta-item">Highwater: <strong id="metaHighwater">—</strong></div>
       <button class="btn btn-sm btn-close" onclick="refreshData()">↺ Refresh</button>
       <button class="btn btn-sm btn-close" onclick="showAuth()">⚙ Settings</button>
     </div>
@@ -224,7 +224,8 @@
   <div class="stats-bar" id="statsBar" style="display:none">
     <div class="stat"><div class="stat-label">Bins</div><div class="stat-value accent" id="statBins">0</div></div>
     <div class="stat"><div class="stat-label">Total Samples</div><div class="stat-value accent3" id="statSamples">0</div></div>
-    <div class="stat"><div class="stat-label">Avg Rate (min/°F)</div><div class="stat-value" id="statAvgRate">—</div></div>
+    <div class="stat"><div class="stat-label">Avg min/°F</div><div class="stat-value" id="statAvgRate">—</div></div>
+    <div class="stat"><div class="stat-label">Avg °F/hour</div><div class="stat-value" id="statAvgDegPerHour">—</div></div>
     <div class="stat"><div class="stat-label">Last Merge</div><div class="stat-value accent2" id="statLastMerge">—</div></div>
   </div>
 
@@ -367,7 +368,7 @@
 
     document.getElementById('metaBar').style.display     = 'flex';
     document.getElementById('metaUpdated').textContent   = bd.last_updated ? new Date(bd.last_updated).toLocaleString() : '—';
-    document.getElementById('metaIntervals').textContent = bd.last_merge_intervals != null ? `${bd.last_merge_intervals} intervals` : '—';
+    document.getElementById('metaHighwater').textContent   = bd.highwater_ts ? new Date(bd.highwater_ts * 1000).toLocaleString() : '—';
 
     const tabsEl = document.getElementById('tabs');
     tabsEl.style.display = bodyTypes.length > 1 ? 'flex' : 'none';
@@ -387,10 +388,12 @@
     const samples  = Object.values(table).reduce((a, s) => a + s.length, 0);
     const allRates = Object.values(table).flat().map(s => s[0]);
     const avgRate  = allRates.length ? allRates.reduce((a,b) => a+b, 0) / allRates.length : 0;
+    const avgDegPerHour = avgRate ? 60 / avgRate : 0;
 
     document.getElementById('statBins').textContent    = bins;
     document.getElementById('statSamples').textContent = samples;
     document.getElementById('statAvgRate').textContent = avgRate ? avgRate.toFixed(2) : '—';
+    document.getElementById('statAvgDegPerHour').textContent = avgRate ? avgDegPerHour.toFixed(1) : '—';
     document.getElementById('statLastMerge').textContent = bd.last_merge_intervals != null
       ? `${bd.last_merge_intervals} intervals` : '—';
   }
@@ -443,7 +446,7 @@
 
     document.getElementById('detailTitle').textContent =
       `Air Temp ${bin}°F — ${+bin + BIN_WIDTH}°F  ·  ${samples.length} samples`;
-
+ 
     document.getElementById('detailBody').innerHTML = samples.map((s, i) => {
       const key      = `${activeBody}|${bin}|${i}`;
       const deleted  = !!deletions[key];
@@ -455,7 +458,7 @@
         <tr id="row-${key.replace(/\|/g,'-')}" class="${deleted ? 'marked-delete' : ''}">
           <td class="center cb-wrap"><input type="checkbox" ${deleted ? 'checked' : ''} onclick="handleCheckbox(event, '${key}')"></td>
           <td style="color:var(--text-dim)">${i + 1}</td>
-          <td class="rate-val">${s[0].toFixed(4)}</td>
+          <td class="rate-val">${s[0].toFixed(2)}</td>
           <td class="ts-val">${new Date(s[1] * 1000).toLocaleString()}</td>
           <td><span class="age-badge ${ageClass}">${ageLabel}</span></td>
         </tr>`;
