@@ -63,7 +63,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, info=None):
         """Called when user adds integration from UI."""
-        _LOG.info(f"async_setup_user Info:[{info}]")
+        _LOG.debug(f"async_setup_user Info:[{info}]")
         _LOG.debug(f"async_setup_user config:[{type(config)} / {config}]")
 
         yaml_config = self.hass.data.get(DOMAIN, {}).get("yaml_config")
@@ -101,7 +101,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device = await _find_screenlogic_device(self.hass)
 
         if device is None:
-            _LOG.info(f"...No ScreenLogic Device")
+            _LOG.warning(f"...No ScreenLogic Device")
             return self.async_abort(reason="no_screenlogic_device")
 
         #
@@ -113,7 +113,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 key = e[0]
                 if (key == "mac"):
                     mac = e[1]
-                    _LOG.info(f"...MAC is {mac}")
+                    _LOG.debug(f"...MAC is {mac}")
                     # Assign a unique ID to the flow and abort the flow
                     # if another flow with the same unique ID is in progress
                     await self.async_set_unique_id(mac)
@@ -125,7 +125,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # Create Device Entry
                     #
                     device_name = f"{device.name} ESP"
-                    _LOG.info(f"..Creating Device: {device_name}")
+                    _LOG.debug(f"..Creating Device: {device_name}")
                     # No user input needed — fully automatic
                     return self.async_create_entry(
                         title=device_name,
@@ -138,7 +138,7 @@ class ESPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # endif key is 'mac'
             # end for each connection
         else:
-            _LOG.info(f"Connections is empty")
+            _LOG.debug(f"Connections is empty")
             return False
 
 

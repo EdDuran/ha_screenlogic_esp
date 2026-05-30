@@ -101,8 +101,6 @@ class ScreenlogicAdapter(PoolAdapter):
                             domain = entry.domain
                             if (domain and domain.lower() == "screenlogic"):
                                 sl_device = device
-                                #log.info("config_entry %s: domain=%s title=%s",
-                                #    entry_id, entry.domain, entry.title)
                                 break
                         # end if entry
                     # end for entry_id

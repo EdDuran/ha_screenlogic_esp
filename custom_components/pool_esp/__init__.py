@@ -55,17 +55,12 @@ class ESPRatesView(HomeAssistantView):
             await p.async_load()
             result["bodies"][body_type] = p.body_data
         
-        #_LOG.warning(f"__init__.ESPRatesView.get: query={request} result={result}")
-
         return self.json(result)
 
     async def post(self, request):
-        _LOG.warning(f"__init__.ESPRatesView.get: query={request}")
-
         hass = request.app["hass"]
         data = await request.json()
         bodies = data.get("bodies", {})
-        #_LOG.warning(f"__init__.ESPRatesView.post: data={data}")
 
         for body_type, body_data in bodies.items():
             p = Persistence(hass, body_type)
@@ -104,7 +99,7 @@ def _start_debugger():
 ###
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the config entry."""
-    _LOG.info(f"__init__.async_reload_entry")
+    _LOG.debug(f"__init__.async_reload_entry")
     await hass.config_entries.async_reload(entry.entry_id)
 
 ###
@@ -112,7 +107,7 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 ###
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle unload — must be implemented for reload to work."""
-    _LOG.info(f"__init__.async_unload_entry")
+    _LOG.debug(f"__init__.async_unload_entry")
 
     # Always clean up panel on unload
     unregister_panel(hass)
@@ -131,7 +126,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 ###
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
-    _LOG.info(f"__init__.setup")
+    _LOG.debug(f"__init__.setup")
 
     ## Save ESP configuration
     hass.data.setdefault(DOMAIN, {})
@@ -143,7 +138,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    _LOG.info(f"__init__.async_setup")
+    _LOG.debug(f"__init__.async_setup")
 
     await _async_copy_www_assets(hass)
 
@@ -173,7 +168,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ### ----- Run Service Test
 
 
-    _LOG.info(f"__init__.async_setup_entry")
+    _LOG.debug(f"__init__.async_setup_entry")
 
     await hass.async_add_executor_job(_start_debugger)
 
@@ -269,7 +264,7 @@ async def _async_copy_www_assets(hass:HomeAssistant):
                     src  = os.path.join(source_dir, filename)
                     dest = os.path.join(dest_dir, filename)
                     shutil.copy2(src, dest)
-                    _LOG.info(f"Copied {filename} to {dest}")
+                    _LOG.debug(f"Copied {filename} to {dest}")
             else:
                 _LOG.warning(f"www source not found: {source_dir}")
         except Exception as e:
@@ -282,8 +277,8 @@ async def _async_copy_www_assets(hass:HomeAssistant):
 ###
 async def async_remove_config_entry_device(hass: HomeAssistant, config_entry: ConfigEntry, device_entry: DeviceEntry) -> bool:#
     """Remove a config entry from a device."""
-    _LOG.info(f"__init__.async_remove_config_entry_device; ConfigEntry: {config_entry}, DeviceEntry: {device_entry}")
-    _LOG.info(f"__init__.async_remove_config_entry_device; DeviceEntry: {device_entry}")
+    _LOG.debug(f"__init__.async_remove_config_entry_device; ConfigEntry: {config_entry}, DeviceEntry: {device_entry}")
+    _LOG.debug(f"__init__.async_remove_config_entry_device; DeviceEntry: {device_entry}")
 
     return True # Tell HA it's ok to delete this device
 

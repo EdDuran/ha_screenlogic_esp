@@ -27,7 +27,7 @@ MIN_DEGREES_GAINED   = 0.25    # ignore intervals with negligible temp rise
 SINGLE_SAMPLE_SCORE  = 0.25    # score for a single sample
 MAX_SAMPLES_PER_BIN  = 20
 MAX_RATE_AGE_DAYS    = 365     # keep a full year of learning
-STORAGE_VERSION      = 1
+HISTORY_DAYS         = 31      # days of recorder history to analyse
 
 # Sensor settle time when entering Sensing state (mirrors SensingBrick timer)
 TIMER_SENSING  = 120

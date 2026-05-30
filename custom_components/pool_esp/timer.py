@@ -66,7 +66,7 @@ class Timer:
         """Start the timer — cancels any previous instance with same name."""
         try:
             if self._running:
-                _LOG.info(f"Timer[{self._name}]: already running, restarting")
+                _LOG.debug(f"Timer[{self._name}]: already running, restarting")
 
             if self._task:
                 self._task.cancel()
@@ -82,7 +82,7 @@ class Timer:
     ###
     async def stop(self):
         """Stop the timer — on_timer_cancelled will be called."""
-        _LOG.info(f"Timer[{self._name}] STOPPED")
+        _LOG.debug(f"Timer[{self._name}] STOPPED")
 
         try:
             if self._task:
@@ -107,7 +107,7 @@ class Timer:
             continuous = self._duration == 0    # Zero duration means run indefinitely until stopped
             remaining = self._duration
 
-            _LOG.info(f"Timer[{self._name}]: Started — duration[{"continuous" if continuous else self._duration}s] interval[{self._interval}s] ")
+            _LOG.debug(f"Timer[{self._name}]: Started — duration[{"continuous" if continuous else self._duration}s] interval[{self._interval}s] ")
 
             while self._running and (continuous or remaining > 0):
                 await asyncio.sleep(self._interval)
@@ -127,13 +127,13 @@ class Timer:
             # Natural completion
             self._running = False
             self._task = None
-            _LOG.info(f"Timer[{self._name}]: completed {self._elapsed} cycles")
+            _LOG.debug(f"Timer[{self._name}]: completed {self._elapsed} minutes")
             try:
                 await self._callback.on_timer_complete(self)
             except Exception as e:
                 _LOG.error(f"Timer[{self._name}]: on_timer_complete() failed; {e}")
         except asyncio.CancelledError:
-                _LOG.debug(f"Timer[{self._name}]: cancelled")
+                _LOG.debug(f"Timer[{self._name}]: has been programmatically CANCELLED")
 
 
 class TimerCallback(Protocol):
