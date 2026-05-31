@@ -12,7 +12,6 @@ from homeassistant.components.frontend import async_register_built_in_panel, asy
 
 from .panel import register_panel, unregister_panel
 from .persistence import Persistence
-from .coordinator import ESPCoordinator
 from .const import (
     DOMAIN,
     PLATFORMS,
@@ -97,22 +96,22 @@ def _start_debugger():
 ###
 ### ----- Reload Integration ---------------------------------------------------
 ###
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Reload the config entry."""
     _LOG.debug(f"__init__.async_reload_entry")
-    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 ###
 ### ----- Unload Integration ---------------------------------------------------
 ###
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Handle unload — must be implemented for reload to work."""
     _LOG.debug(f"__init__.async_unload_entry")
 
     # Always clean up panel on unload
     unregister_panel(hass)
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
 
     # Pop add-on data
     hass.data.pop(ADDONS_COORDINATOR, None)
@@ -195,7 +194,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     except Exception as e:
         _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
 
-        ir.async_get_or_create(
+        ir.async_create_issue(
             hass,
             DOMAIN,
             "missing_pool_adapter",
@@ -210,6 +209,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ###
     ### Create ESP Coordinator with the Pool Adapter's Configuration
     ###
+    from .coordinator import ESPCoordinator
     coordinator = ESPCoordinator(hass, config_entry, pool_adapter)
     await coordinator.async_setup()  # your custom init
     await coordinator.async_config_entry_first_refresh()
@@ -224,12 +224,13 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ###
     ### Register the test scenario service
     ###
-    _LOG.debug(f"...async_setup_entry: Register [run_test_scenario] -> [run_scenario]")
-    hass.services.async_register(
-        "pool_esp",
-        "run_test_scenario",
-        handle_run_test
-    )
+    if os.getenv("HA_DEBUG"):
+        hass.services.async_register(
+            "pool_esp",
+            "run_test_scenario",
+            handle_run_test
+        )
+        _LOG.debug(f"...Register [run_test_scenario] -> [run_scenario]")
 
     ###
     ### Register panel if option enabled

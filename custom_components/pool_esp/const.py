@@ -69,7 +69,9 @@ CONTEXT_HASS                = "hass"            # Home Assistant instance
 CONTEXT_TESTING             = "testing"         # Testing mode
 CONTEXT_EXPORT              = "export"          # Export data
 
+# Integration Options
 CONF_SHOW_PANEL = "show_sidebar_panel"
+CONF_HEATER_COST_PER_HOUR = "heater_cost_per_hour"
 
 POOL_ADAPTER_CONFIG = "adapter"
 DEFAULT_POOL_ADAPTER = "screenlogic_adapter"

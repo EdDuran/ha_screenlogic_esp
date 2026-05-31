@@ -5,13 +5,13 @@ import logging
 from dataclasses_json import config
 from homeassistant.components.homeassistant import IssueSeverity
 from homeassistant import config_entries
-from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, callback
+from homeassistant.config_entries import ConfigEntryNotReady, OptionsFlow, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import device_registry as dr
 from homeassistant import config_entries
 
 from .panel import register_panel, unregister_panel
-from .const import DEFAULT_POOL_ADAPTER, DOMAIN, CONF_SHOW_PANEL, POOL_ADAPTER_CONFIG
+from .const import CONF_HEATER_COST_PER_HOUR, DEFAULT_POOL_ADAPTER, DOMAIN, CONF_SHOW_PANEL, POOL_ADAPTER_CONFIG
 
 
 _LOG = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ async def _find_screenlogic_device(hass):
                 return device
     return None
 
-class ESPOptionsFlow(config_entries.OptionsFlow):
+class ESPOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
@@ -44,7 +44,12 @@ class ESPOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_SHOW_PANEL,
                     default = self.config_entry.options.get(CONF_SHOW_PANEL, False)
-                ): bool
+                ): bool,
+                
+                vol.Optional(
+                    CONF_HEATER_COST_PER_HOUR,
+                    default=self.config_entry.options.get(CONF_HEATER_COST_PER_HOUR, 0.0)
+                ): vol.Coerce(float),
             }),
             description_placeholders = {
                 "info": "Enable to show ESP Rate Table viewer in the HA sidebar"

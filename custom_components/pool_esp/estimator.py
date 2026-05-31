@@ -6,6 +6,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from custom_components.pool_esp.sensor import HeaterRuntimeSensor
+
 from .const import STATUS_LEARNING
 import debugpy
 
@@ -448,11 +450,16 @@ class ESPEstimator:
 
             is_on = heat_state.lower() == HEATER_STATUS_HEATING_VALUE.lower()
 
-            if is_on and on_start is None:
+            if is_on and on_start is None:              ### Heater turned ON
                 on_start = ts
-            elif not is_on and on_start is not None:
+            elif not is_on and on_start is not None:    ### Heater turned OFF
+                duration_min = (ts - on_start) / 60.0
                 intervals.append((on_start, ts, False))  # ← 3-tuple, closed
                 on_start = None
+
+                # Update cost and runtime sensors
+                self._coordinator.get_sensor(self._body_type, HeaterCostSensor).add_interval_cost(duration_min)
+                self._coordinator.get_sensor(self._body_type, HeaterRuntimeSensor).add_interval_runtime(duration_min)   
 
         # Close open interval if heater still on
         if on_start is not None and now_ts is not None:

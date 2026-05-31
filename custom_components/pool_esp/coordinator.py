@@ -2,9 +2,10 @@ import logging
 import time
 import traceback
 from weakref import WeakSet
-from .bricks import STATE_TRANSITIONS
 
-from homeassistant.config_entries import ConfigEntry
+from custom_components.pool_esp.sensor import HeaterCostSensor
+
+from homeassistant.config_entries import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STARTED, ConfigEntry
 from homeassistant.helpers.event import async_track_state_change_event
 
 from homeassistant.helpers.update_coordinator import (
@@ -12,6 +13,7 @@ from homeassistant.helpers.update_coordinator import (
     HomeAssistant,
     Event
 )
+from reactivex import start
 from .const import *
 from .util import *
 from .state_machine import StateMachine
@@ -28,21 +30,19 @@ class ESPCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass:HomeAssistant, config_entry:ConfigEntry, pool_adapter:PoolAdapter) -> None:
         
+        super().__init__(hass, _LOG, name=DOMAIN)
+
         _LOG.debug(f"ESPCoordinator.__init__")
         _LOG.debug(f"...ConfigEntry: {type(config_entry)}:{config_entry}")
         _LOG.debug(f"...PoolAdapter: {type(pool_adapter)} {pool_adapter}")
 
-        super().__init__(
-            hass,
-            _LOG,
-            name=DOMAIN
-        )
+        self._config_entry = config_entry   
         self._pool_adapter = pool_adapter
         self._config = pool_adapter.config                      # PoolAdapter Config
         self._watch_entities = pool_adapter.watch_entities      # Pool Entities we're watching
         self._contexts = {}                                     # {body_type: Context}
         self._unsub = []                                        # state change listeners
-        self._sensors = WeakSet()                               # Set of HA Sensor Entities to update when ESP changes
+        self._sensors:dict[str, set] = {}                       # {body_type: set of HA Sensor Entities to update when ESP changes}
 
     @property
     def pool_adapter(self):
@@ -55,20 +55,43 @@ class ESPCoordinator(DataUpdateCoordinator):
         """
         Add a Sensor Entity to the Coordinator's set of sensors to update when ESP changes
         """
-        self._sensors.add(sensor)
+        self._sensors.setdefault(body_type, set()).add(sensor)
     
     def update_sensor(self, body_type):
         """
         Tell the Sensor Entity for the specified body type to update its state in Home Assistant
         """
-        for sensor in self._sensors:
-            if sensor._body_type == body_type:
-                sensor.async_write_ha_state()
+        for sensor in self._sensors.get(body_type, set()):
+            sensor.async_write_ha_state()
+    
+    def get_sensor(self, body_type:str, sensor_type):
+        """
+        Get the specified sensor for the specified body type
+        """
+        for sensor in self._sensors.get(body_type, set()):
+            if isinstance(sensor, sensor_type) and sensor._body_type == body_type:
+                return sensor
+        
+        raise ESPException("ERROR", f"Sensor[{body_type}][{sensor_type}] was not found in Coordinator sensors: {self._sensors.get(body_type, set())}")
+    
+    def get_sensors(self):
+        """
+        Get ALL sensors for ALL body types
+        """
+        sensors = set()
+        for body_type, sensor_set in self._sensors.items():
+            sensors.update(sensor_set)
+        
+        return sensors
+        
     ###
     ### ----- HA Required Functions --------------------------------------------
     ###
     async def async_setup(self) -> None:
         """Called once after integration loads."""
+
+        from homeassistant.helpers.start import async_at_started
+
         _LOG.debug(f"ESPCoordinator.async_setup")
         _LOG.debug(f"...PoolAdapter: {self._pool_adapter}")
 
@@ -110,12 +133,23 @@ class ESPCoordinator(DataUpdateCoordinator):
             )
         )
 
-        ###
-        ### Initialize all BodyType ESP Values
-        ###
+        # Defer first calculation until ALL platforms are initialized
+        async_at_started(self.hass, self._first_estimator_calculations)
+        _LOG.debug("ESPCoordinator: deferred first calculation until platforms ready")
+    
+    # end async_setup
+
+    async def _first_estimator_calculations(self, hass) -> None:
+        """Called when HA has fully started — all platforms initialized."""
+        _LOG.debug("ESPCoordinator: Platform is ready, running first calculation")
         for body_type in BODY_TYPES:
             context = self.get_context(body_type)
             await self._execute_with_current_data(context, "Initalization")
+
+
+    def get_option(self, key: str, default=None):
+        """Get a value from the integration options."""
+        return self._config_entry.options.get(key, default)
     
     def get_context(self, body_type: str) -> Context:
         """ Get Context by body_type """
@@ -209,6 +243,8 @@ class ESPCoordinator(DataUpdateCoordinator):
         """
         Execute the State Machine with Current ScreenLogic data
         """
+        from .bricks import STATE_TRANSITIONS
+
         try:
             body_type = context.body_type
             config = context.config

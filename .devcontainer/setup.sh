@@ -35,4 +35,9 @@ export HA_DEBUG=true
 ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 echo "America/New_York" > /etc/timezone
 
+# Install git hooks
+ln -sf /workspaces/ha_screenlogic_esp/.devcontainer/scripts/pre-commit \
+       /workspaces/ha_screenlogic_esp/.git/hooks/pre-commit
+chmod +x /workspaces/ha_screenlogic_esp/.devcontainer/scripts/pre-commit
+echo "✓ Git hooks installed"
 

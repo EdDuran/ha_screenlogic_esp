@@ -84,7 +84,7 @@ class StateMachine:
                             if next_state is None:
                                 raise ESPException("ERROR", f"StateMachine: Failed to find TransitionState: State[{current_transitions}] Result[{result}]")
                         
-                        _LOG.debug(f"...[{current_state}] [{brick.__name__}({name})] --> [{result}] --> NextState[{next_state}]")
+                        _LOG.debug(f"...State[{current_state}] --> {brick.__name__}({name}) --> Result[{result}] --> NextState[{next_state}]")
                     
                     except Exception as e:
                         _LOG.error(f"StateMachine: Failed to execute State [{current_state}]; {e}")

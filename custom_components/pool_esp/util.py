@@ -158,7 +158,7 @@ class PoolAdapter(ABC):
         raise NotImplementedError("Subclasses must implement this method.")
     
     @classmethod
-    async def create(cls, hass:homeassistant, name: str, *args, **kwargs) -> PoolAdapter:
+    async def create(cls, hass:HomeAssistant, name: str, *args, **kwargs) -> PoolAdapter:
         """
         Create an adapter instance. The name should be defined in the configuration.yaml:
             screenlogic_esp:
@@ -559,11 +559,11 @@ class Context():
 
 
     @property
-    def hass(self) -> homeassistant:
+    def hass(self) -> HomeAssistant:
         return self._context.get(CONTEXT_HASS)
 
     @hass.setter
-    def hass(self, value:homeassistant):
+    def hass(self, value:HomeAssistant):
         self._context[CONTEXT_HASS] = value
 
 
