@@ -77,7 +77,7 @@ def _start_debugger():
     _LOG.debug(f"__init__._start_debugger: Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
 
     if not os.getenv("HA_DEBUG"):
-        _LOG.warning("HA_DEBUG is not set...Debugging will not be available")
+        _LOG.debug("HA_DEBUG is not set...Debugging will not be available")
         return
 
     try:

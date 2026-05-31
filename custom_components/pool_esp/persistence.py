@@ -69,12 +69,12 @@ class Persistence:
             self._loaded = True
             self._highwater_ts = self.body_data.get(KEY_HIGHWATER_TS, 0.0)
             count = self.sample_count
-            _LOG.debug(f"Persistence.async_load: [{self._body_type}] Samples[{count}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
+            _LOG.debug(f"async_load: [{self._body_type}] Samples[{count}]")
 
     async def async_save(self):
         """Save persistent data to HA storage."""
         await self._store.async_save(self._data)
-        _LOG.debug(f"Persistence.async_save: [{self._body_type}] saved")
+        _LOG.debug(f"async_save: [{self._body_type}]")
 
     # -------------------------------------------------------------------------
     # Public API
@@ -96,8 +96,6 @@ class Persistence:
         - High-water mark only advances if samples were actually merged
         """
 
-
-
         await self.async_load()
 
         self._data["pool_type"] = self._pool_type
@@ -105,44 +103,35 @@ class Persistence:
         body_data     = self.body_data
         rate_table    = body_data.setdefault(KEY_RATE_TABLE, {})
 
-        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
+        _LOG.debug(f"merge_and_save: [{self._body_type}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
 
         # --- Identify new closed intervals ---------------------------------------
         new_closed = [
             (start, end) for start, end, is_open in intervals
-            if not is_open and end > self._highwater_ts
+                if not is_open and end > self._highwater_ts
         ]
 
         # Log open interval for visibility
         open_interval = next(
-            ((start, end) for start, end, is_open in intervals if is_open),
-            None
-        )
+            ((start, end) for start, end, is_open in intervals if is_open), None)
 
         if not new_closed:
-            _LOG.debug(f"...no new closed intervals since [{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
+            _LOG.debug(f"...No new closed intervals since highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
             if open_interval:
                 start, end = open_interval
-                _LOG.debug(
-                    f"...open interval still active: "
-                    f"Start[{local_time(start)}] "
-                    f"Duration[{(end - start) / 60.0:.1f} min]"
-                )
+                _LOG.debug(f"...open interval still active: Start[{local_time(start)}] Duration[{(end - start) / 60.0:.1f} min]")
             return
 
         for start, end in new_closed:
-            _LOG.debug(
-                f"...New Closed Interval: "
-                f"Start[{local_time(start)}] "
-                f"End[{local_time(end)}] "
-                f"Duration[{(end - start) / 60.0:.1f} min]"
-            )
+            _LOG.debug(f"...New Closed Interval: Start[{local_time(start)}] End[{local_time(end)}] Duration[{(end - start) / 60.0:.1f} min]")
 
         # --- Merge samples -------------------------------------------------------
         now_ts = time.time()
         cutoff = now_ts - (MAX_RATE_AGE_DAYS * 86400)
         merged = 0
         pruned = 0
+
+        _LOG.debug(f"...highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
 
         for bin_key, new_samples in new_table.items():
             key      = str(bin_key)
@@ -153,15 +142,15 @@ class Persistence:
             existing = [s for s in existing if s[1] >= cutoff]
             pruned  += before - len(existing)
 
-            # Merge new samples
+            # Merge new samples AFTER highwater mark
             for sample_rate, sample_ts in new_samples:
-                _LOG.debug(
-                    f"...Merging Bin[{bin_key}F] "
-                    f"Rate[{sample_rate:.2f}] "
-                    f"SampleTime[{local_time(sample_ts)}]"
-                )
-                existing.append([sample_rate, sample_ts])
-                merged += 1
+                if (sample_ts > self._highwater_ts):
+                    if (sample_ts == end for start, end in new_closed):
+                        _LOG.debug(f"...MERGE: Bin[{bin_key}F] Rate[{sample_rate:.2f}] SampleTime[{local_time(sample_ts)}]")
+                        existing.append([sample_rate, sample_ts])
+                        merged += 1
+                    else:
+                        _LOG.debug(f"...SKIP : Bin[{bin_key}F] Rate[{sample_rate:.2f}] SampleTime[{local_time(sample_ts)}]")
 
             # Cap to max — keep most recent
             if len(existing) > MAX_SAMPLES_PER_BIN:
@@ -173,15 +162,9 @@ class Persistence:
         if merged > 0:
             new_highwater_ts = max(end for _, end in new_closed)
             body_data[KEY_HIGHWATER_TS] = new_highwater_ts
-            _LOG.debug(
-                f"...high-water mark advanced to [{local_time(new_highwater_ts)}]"
-            )
+            _LOG.debug(f"...Advancing highwater mark to [{local_time(new_highwater_ts)}]")
         else:
-            _LOG.warning(
-                f"Persistence.merge_and_save: [{self._body_type}] "
-                f"no samples merged despite {len(new_closed)} new closed intervals — "
-                f"high-water mark NOT advanced"
-            )
+            _LOG.warning(f"Persistence.merge_and_save: [{self._body_type}] No samples merged despite {len(new_closed)} new closed intervals — highwater mark NOT advanced")
 
         # --- Update metadata -----------------------------------------------------
         body_data[KEY_RATE_TABLE]           = rate_table
@@ -194,11 +177,7 @@ class Persistence:
         self._data[self._body_type] = body_data
         await self.async_save()
 
-        _LOG.debug(
-            f"Persistence.merge_and_save: [{self._body_type}] "
-            f"merged[{merged}] pruned[{pruned}] "
-            f"total_samples[{body_data['sample_count']}]"
-        )
+        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] merged[{merged}] pruned[{pruned}] total_samples[{self.sample_count}]")
 
 
 

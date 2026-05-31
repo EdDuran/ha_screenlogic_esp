@@ -244,8 +244,6 @@ class ESPEstimator:
         except Exception as e:
             _LOG.error(traceback.format_exc())
             raise ESPException("ERROR", "calculate: Failed to build rate table") from e
-
-        ##debugpy.breakpoint()
         
         # --- Log rate table --------------------------------------------------
         for bin_key in sorted(table.keys()):
@@ -656,13 +654,13 @@ class ESPEstimator:
         consistency_score = max(0.0, 1.0 - cv)
         return size_score * consistency_score
 
-    def _weighted_rate(self, table: dict, target_bin: int, bin_width: int):
+    def _weighted_rate(self, table:dict, target_bin:int, bin_width:int):
         """
         Compute a confidence-weighted median rate (min/deg) from the rate table,
         blending bins by proximity to target_bin.
         Returns (rate, confidence).
         """
-        _LOG.debug("weighted_rate:")
+        _LOG.debug(f"weighted_rate: target_bin[{target_bin}]")
         total_weight = 0.0
         weighted_sum = 0.0
 
@@ -672,16 +670,11 @@ class ESPEstimator:
                 continue
 
             clean = self._trim_samples(samples)
-            #
-            #
-            #
             if len(clean) < 3:
                 clean = samples
 
             distance        = abs(bin_key - target_bin) / bin_width
             distance_weight = 1.0 / (1.0 + distance)
-            #
-            #
             #
             # Single sample — use directly with low confidence
             if len(clean) == 1:
@@ -692,8 +685,6 @@ class ESPEstimator:
                 weighted_sum += med * weight
                 total_weight += weight
                 continue
-            #
-            #
             #
             if len(clean) < 2:  # absolute minimum
                 _LOG.debug(f"...[{bin_key}] only {len(samples)} raw samples (need 2+), skipping")
@@ -727,6 +718,6 @@ class ESPEstimator:
             rate       = weighted_sum / total_weight
             confidence = round(min(total_weight / 2.0, 1.0), 2)
 
-        _LOG.debug(f"...Weighted Rate[{rate}] total_weight[{total_weight}] confidence[{confidence}]")
+        _LOG.debug(f"...Weighted Rate[{rate:.2f}] total_weight[{total_weight:.2f}] confidence[{confidence}]")
 
         return rate, confidence

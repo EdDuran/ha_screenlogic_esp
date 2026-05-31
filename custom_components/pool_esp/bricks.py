@@ -230,8 +230,7 @@ async def _brick_sensing(context:Context) -> str:
 
     result = context.get_esp_result()
 
-    is_testing = context.testing
-    if is_testing:
+    if context.testing:
         _LOG.debug(f"..._brick_sensing: Testing mode is enabled, skipping sensing")
         return result
 

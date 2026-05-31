@@ -3,7 +3,6 @@ import time
 import traceback
 from weakref import WeakSet
 from .bricks import STATE_TRANSITIONS
-import debugpy
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.event import async_track_state_change_event
