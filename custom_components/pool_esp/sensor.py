@@ -9,7 +9,8 @@ from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDev
 from homeassistant.const import UnitOfTime
 
 from .util import *
-from .const import *
+from .const import CONF_HEATER_FUEL_TYPE, CONF_GAS_COST_PER_THERM, CONF_GAS_HEATER_BTU, CONF_ELECTRIC_HEATER_KW, CONF_ELECTRIC_COST_PER_KWH
+
 
 from typing import TYPE_CHECKING
 
@@ -39,6 +40,11 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_
 class HeaterCostSensor(CoordinatorEntity, SensorEntity):
     """Accumulates heater operating cost over time."""
 
+    _attr_device_class               = SensorDeviceClass.MONETARY
+    _attr_state_class                = SensorStateClass.TOTAL
+    _attr_native_unit_of_measurement = "USD"
+    _attr_icon                       = "mdi:currency-usd"
+
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
 
         super().__init__(coordinator)
@@ -51,17 +57,51 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
 
         self._attr_unique_id = f"{prefix}_{body_type}_heater_cost"
         self._attr_name      = f"{body_type.capitalize()} Heater Cost"
-        self._attr_device_class               = SensorDeviceClass.MONETARY
-        self._attr_state_class                = SensorStateClass.TOTAL
-        self._attr_native_unit_of_measurement = "USD"
-        self._attr_icon                       = "mdi:currency-usd"
     
     def __str__(self) -> str:
         return f"HeaterCostSensor({self._attr_unique_id}) total_cost[${self._total_cost:.2f}]"
 
     @property
     def native_value(self) -> float:
-        return round(self._total_cost, 2)
+        return round(self._coordinator.get_persistence(self._body_type).total_cost, 2)
+    
+    @property
+    def extra_state_attributes(self) -> dict:
+        options      = self._coordinator.config_entry.options
+        fuel_type    = options.get(CONF_HEATER_FUEL_TYPE, "unknown")
+        cost_per_hour = self._get_cost_per_hour(options, fuel_type)
+        runtime_min  = self._coordinator.get_persistence(self._body_type).total_runtime_minutes
+
+        attrs = {
+            "fuel_type":             fuel_type,
+            "cost_per_hour":         cost_per_hour,
+            "total_runtime_minutes": round(runtime_min, 1),
+            "total_runtime_hours":   round(runtime_min / 60.0, 2),
+        }
+
+        # Fuel-specific attributes
+        if fuel_type == "gas":
+            attrs["btu_rating"]       = options.get(CONF_GAS_HEATER_BTU, 0)
+            attrs["cost_per_therm"]   = options.get(CONF_GAS_COST_PER_THERM, 0.0)
+        elif fuel_type in ("heat_pump", "electric"):
+            attrs["heater_kw"]        = options.get(CONF_ELECTRIC_HEATER_KW, 0)
+            attrs["cost_per_kwh"]     = options.get(CONF_ELECTRIC_COST_PER_KWH, 0.0)
+            attrs["total_kwh"]        = round((runtime_min / 60.0) * 
+                                        options.get(CONF_ELECTRIC_HEATER_KW, 0), 2)
+
+        return attrs
+
+    def _get_cost_per_hour(self, options, fuel_type) -> float:
+        """Calculate effective cost per hour based on fuel type."""
+        if fuel_type == "gas":
+            btu        = options.get(CONF_GAS_HEATER_BTU, 0)
+            per_therm  = options.get(CONF_GAS_COST_PER_THERM, 0.0)
+            return round((btu / 100_000) * per_therm, 2)
+        elif fuel_type in ("heat_pump", "electric"):
+            kw         = options.get(CONF_ELECTRIC_HEATER_KW, 0)
+            per_kwh    = options.get(CONF_ELECTRIC_COST_PER_KWH, 0.0)
+            return round(kw * per_kwh, 2)
+        return 0.0
 
     @property
     def device_info(self):
@@ -84,14 +124,23 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
 
     def add_interval_cost(self, duration_minutes: float):
         """Called when a heating interval completes."""
-        cost_per_hour = self._coordinator.get_option(
-            CONF_HEATER_COST_PER_HOUR, 0.0
-        )
-        if cost_per_hour > 0:
-            cost = (duration_minutes / 60.0) * cost_per_hour
-            self._total_cost += cost
-            self.async_write_ha_state()
-            _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_minutes:.1f} min] total[${self._total_cost:.2f}]")
+        heating_type = self._coordinator.get_option(CONF_HEATER_FUEL_TYPE, 0.0)
+        if heating_type == "gas":
+            cost_per_unit = self._coordinator.get_option(CONF_GAS_COST_PER_THERM, 0.0)
+            btu_per_unit = self._coordinator.get_option(CONF_GAS_HEATER_BTU, 0.0)
+            if cost_per_unit > 0 and btu_per_unit > 0:
+                cost = (duration_minutes / 60.0) * (btu_per_unit / 100000) * cost_per_unit
+                self._total_cost += cost
+                self.async_write_ha_state()
+                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_minutes:.1f} min] total[${self._total_cost:.2f}]")
+        elif heating_type in ("heat_pump", "electric"):
+            cost_per_hour = self._coordinator.get_option(CONF_ELECTRIC_COST_PER_KWH, 0.0)
+            heater_kw = self._coordinator.get_option(CONF_ELECTRIC_HEATER_KW, 0.0)
+            if cost_per_hour > 0 and heater_kw > 0:
+                cost = (duration_minutes / 60.0) * heater_kw * cost_per_hour
+                self._total_cost += cost
+                self.async_write_ha_state()
+                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_minutes:.1f} min] total[${self._total_cost:.2f}]")
 
 # end class HeaterCostSensor
 
@@ -101,6 +150,11 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
 
 class HeaterRuntimeSensor(CoordinatorEntity, SensorEntity):
     """Accumulates heater runtime in minutes."""
+
+    _attr_device_class               = SensorDeviceClass.DURATION
+    _attr_state_class                = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_icon                       = "mdi:timer-outline"
 
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
 
@@ -114,17 +168,13 @@ class HeaterRuntimeSensor(CoordinatorEntity, SensorEntity):
 
         self._attr_unique_id = f"{prefix}_{body_type}_heater_runtime"
         self._attr_name      = f"{body_type.capitalize()} Heater Runtime"
-        self._attr_device_class               = SensorDeviceClass.DURATION
-        self._attr_state_class                = SensorStateClass.TOTAL_INCREASING
-        self._attr_native_unit_of_measurement = UnitOfTime.MINUTES
-        self._attr_icon                       = "mdi:timer-outline"
 
     def __str__(self) -> str:
         return f"HeaterRuntimeSensor({self._attr_unique_id}) total_minutes[{self._total_minutes:.1f}]"
 
     @property
     def native_value(self) -> float:
-        return round(self._total_minutes, 1)
+        return round(self._coordinator.get_persistence(self._body_type).total_runtime_minutes, 1)
 
     @property
     def device_info(self):

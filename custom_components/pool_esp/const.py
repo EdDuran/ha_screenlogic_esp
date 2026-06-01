@@ -70,8 +70,12 @@ CONTEXT_TESTING             = "testing"         # Testing mode
 CONTEXT_EXPORT              = "export"          # Export data
 
 # Integration Options
-CONF_SHOW_PANEL = "show_sidebar_panel"
-CONF_HEATER_COST_PER_HOUR = "heater_cost_per_hour"
+CONF_SHOW_PANEL             = "show_sidebar_panel"
+CONF_HEATER_FUEL_TYPE       = "heater_fuel_type"
+CONF_ELECTRIC_HEATER_KW     = "electric_heater_kw"
+CONF_ELECTRIC_COST_PER_KWH  = "electric_cost_per_kwh"
+CONF_GAS_HEATER_BTU         = "gas_heater_btu"
+CONF_GAS_COST_PER_THERM     = "gas_cost_per_therm"
 
 POOL_ADAPTER_CONFIG = "adapter"
 DEFAULT_POOL_ADAPTER = "screenlogic_adapter"
@@ -79,6 +83,7 @@ POOL_PREFIX   = "pool_prefix"
 POOL_MODEL    = "pool_model"
 POOL_NAME     = "pool_name"
 POOL_ID       = "pool_id"
+POOL_UNIQUE_ID = "pool_unique_id"
 
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"

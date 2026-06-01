@@ -226,7 +226,8 @@
     <div class="stat"><div class="stat-label">Total Samples</div><div class="stat-value accent3" id="statSamples">0</div></div>
     <div class="stat"><div class="stat-label">Avg min/°F</div><div class="stat-value" id="statAvgRate">—</div></div>
     <div class="stat"><div class="stat-label">Avg °F/hour</div><div class="stat-value" id="statAvgDegPerHour">—</div></div>
-    <div class="stat"><div class="stat-label">Last Merge</div><div class="stat-value accent2" id="statLastMerge">—</div></div>
+    <div class="stat"><div class="stat-label">Heating Cost</div><div class="stat-value accent2" id="heatingCost">—</div></div>
+    <div class="stat"><div class="stat-label">Heating Hours</div><div class="stat-value accent2" id="heatingHours">—</div></div>
   </div>
 
   <!-- Detail Panel -->
@@ -389,13 +390,15 @@
     const allRates = Object.values(table).flat().map(s => s[0]);
     const avgRate  = allRates.length ? allRates.reduce((a,b) => a+b, 0) / allRates.length : 0;
     const avgDegPerHour = avgRate ? 60 / avgRate : 0;
+    const heatingHours = bd.total_runtime_minutes / 60 || 0;
+    const heatingCost = bd.total_cost || 0;
 
     document.getElementById('statBins').textContent    = bins;
     document.getElementById('statSamples').textContent = samples;
     document.getElementById('statAvgRate').textContent = avgRate ? avgRate.toFixed(2) : '—';
     document.getElementById('statAvgDegPerHour').textContent = avgRate ? avgDegPerHour.toFixed(1) : '—';
-    document.getElementById('statLastMerge').textContent = bd.last_merge_intervals != null
-      ? `${bd.last_merge_intervals} intervals` : '—';
+    document.getElementById('heatingCost').textContent = heatingCost ? `$${heatingCost.toFixed(2)}` : '—';
+    document.getElementById('heatingHours').textContent = heatingHours ? `${heatingHours.toFixed(1)}` : '—';
   }
 
   function renderGrid(bd) {

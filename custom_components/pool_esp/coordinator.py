@@ -3,7 +3,7 @@ import time
 import traceback
 from weakref import WeakSet
 
-from custom_components.pool_esp.sensor import HeaterCostSensor
+from custom_components.pool_esp.persistence import Persistence
 
 from homeassistant.config_entries import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STARTED, ConfigEntry
 from homeassistant.helpers.event import async_track_state_change_event
@@ -43,6 +43,7 @@ class ESPCoordinator(DataUpdateCoordinator):
         self._contexts = {}                                     # {body_type: Context}
         self._unsub = []                                        # state change listeners
         self._sensors:dict[str, set] = {}                       # {body_type: set of HA Sensor Entities to update when ESP changes}
+        self._persistence:dict[str, Persistence] = {}           # {body_type: Persistence} Persistence for each body type
 
     @property
     def pool_adapter(self):
@@ -106,6 +107,10 @@ class ESPCoordinator(DataUpdateCoordinator):
             context.hass = self.hass    # Context has a reference to the Home Assistant instance
             self._contexts[body_type] = context
 
+            p = Persistence(self.hass, body_type, self._pool_adapter.name)
+            await p.async_load()
+            self._persistence[body_type] = p
+            
         _LOG.debug(f"...WatchEntities: {self._watch_entities}")
 
         ###
@@ -146,6 +151,9 @@ class ESPCoordinator(DataUpdateCoordinator):
             context = self.get_context(body_type)
             await self._execute_with_current_data(context, "Initalization")
 
+    def get_persistence(self, body_type: str) -> Persistence:
+        """Return the persistence instance for a body type."""
+        return self._persistence[body_type]
 
     def get_option(self, key: str, default=None):
         """Get a value from the integration options."""

@@ -16,8 +16,12 @@
       "init": {
         "title": "Pool ESP Options",
         "data": {
-          "heater_cost_per_hour": "Heater cost per hour ($)",
-          "show_sidebar_panel": "Show ESP Rates in sidebar"
+          "show_sidebar_panel": "Show ESP Rates in sidebar",
+          "heater_fuel_type": "Heater fuel type",
+          "electric_heater_kw": "Electric heater rating (kW)",
+          "electric_cost_per_kwh": "Electricity cost per kWh ($)",
+          "gas_heater_btu": "Gas heater BTU rating (BTU/hr)",
+          "gas_cost_per_therm": "Gas cost per therm ($)"
         },
         "description": "Enter your heater's operating cost per hour. For gas heaters divide your hourly BTU rating by 100,000 and multiply by your gas price per therm. For heat pumps multiply kW input by your electric rate."
       }

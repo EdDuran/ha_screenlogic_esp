@@ -112,9 +112,16 @@ class ScreenlogicAdapter(PoolAdapter):
         if sl_device is None:
             _LOG.warning(f"No ScreenLogic Device found")
             raise ESPException("No ScreenLogic device found")
-
-
-        _LOG.debug(f"...Device: {sl_device}")
+        
+        connections = sl_device.connections
+        if connections:
+            for e in connections:
+                key = e[0]
+                if (key == "mac"):
+                    unique_id = e[1]
+                    break
+                # endif key is 'mac'
+            # end for each connection
 
         name = sl_device.name
         prefix = name.lower().replace(":", "").replace("-", "_").replace(" ", "_").replace("__", "_")
@@ -127,6 +134,7 @@ class ScreenlogicAdapter(PoolAdapter):
         self._adapter_config[POOL_MODEL] = model
         self._adapter_config[POOL_PREFIX] = prefix
         self._adapter_config[POOL_ID] = id
+        self._adapter_config[POOL_UNIQUE_ID] = unique_id
 
         ## Add Body Configurations and Watch Entities
         for body_type in self._body_types:

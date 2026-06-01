@@ -18,13 +18,15 @@ _LOG = logging.getLogger(__name__)
 KEY_STORAGE = f"{DOMAIN}_rates.json"
 KEY_STORAGE_VERSION = 1
 
-KEY_HIGHWATER_TS  = "highwater_ts"
-KEY_RATE_TABLE   = "rate_table"
-KEY_LAST_UPDATED = "last_updated"
-KEY_SAMPLE_COUNT = "sample_count"
-KEY_LAST_MERGE_INTERVALS = "last_merge_intervals"
-KEY_LAST_MERGE_ADDED     = "last_merge_added"
-KEY_LAST_MERGE_PRUNED    = "last_merge_pruned"
+KEY_HIGHWATER_TS          = "highwater_ts"
+KEY_RATE_TABLE            = "rate_table"
+KEY_LAST_UPDATED          = "last_updated"
+KEY_SAMPLE_COUNT          = "sample_count"
+KEY_LAST_MERGE_INTERVALS  = "last_merge_intervals"
+KEY_LAST_MERGE_ADDED      = "last_merge_added"
+KEY_LAST_MERGE_PRUNED     = "last_merge_pruned"
+KEY_TOTAL_RUNTIME_MINUTES = "total_runtime_minutes"
+KEY_TOTAL_COST            = "total_cost"
 
 
 class Persistence:
@@ -44,7 +46,9 @@ class Persistence:
                 "last_updated": "2026-05-12T00:00:00+00:00",
                 "highwater_ts": 1234567890.0,
                 "sample_count": 42,
-                "last_merge_intervals": 3
+                "last_merge_intervals": 3,
+                "total_cost": 59.83,
+                "total_runtime_minutes": 5128.2
             },
         "pool_type": "Screenlogic"
     }
@@ -67,8 +71,8 @@ class Persistence:
         if (not self._loaded):
             self._data   = await self._store.async_load() or {}
             self._loaded = True
-            self._highwater_ts = self.body_data.get(KEY_HIGHWATER_TS, 0.0)
-            count = self.sample_count
+            self._highwater_ts = self._body_data.get(KEY_HIGHWATER_TS, 0.0)
+            count = self._sample_count
             _LOG.debug(f"async_load: [{self._body_type}] Samples[{count}]")
 
     async def async_save(self):
@@ -80,7 +84,7 @@ class Persistence:
     # Public API
     # -------------------------------------------------------------------------
 
-    async def merge_and_save(self, new_table: dict, intervals: list, intervals_used: int):
+    async def merge_and_save(self, new_table:dict, intervals:list, intervals_used:int, cost_per_hour:float = 0.0):
         """
         Merge a freshly built rate table into persistent storage.
         Called by Estimator after each time the Rate Table is built.
@@ -100,7 +104,7 @@ class Persistence:
 
         self._data["pool_type"] = self._pool_type
 
-        body_data     = self.body_data
+        body_data     = self._body_data
         rate_table    = body_data.setdefault(KEY_RATE_TABLE, {})
 
         _LOG.debug(f"merge_and_save: [{self._body_type}] highwater[{local_time(self._highwater_ts) if self._highwater_ts else 'never'}]")
@@ -124,6 +128,8 @@ class Persistence:
 
         for start, end in new_closed:
             _LOG.debug(f"...New Closed Interval: Start[{local_time(start)}] End[{local_time(end)}] Duration[{(end - start) / 60.0:.1f} min]")
+
+        new_runtime_minutes = sum((end - start) / 60.0 for start, end in new_closed)
 
         # --- Merge samples -------------------------------------------------------
         now_ts = time.time()
@@ -159,7 +165,18 @@ class Persistence:
             rate_table[key] = existing
 
         # --- Advance high-water mark ---------------------------------------------
-        if merged > 0:
+        if merged > 0 or new_runtime_minutes > 0:
+            ### Update runtime and cost totals — these are used for diagnostics and to determine if the pool is "expensive" to heat
+            existing_runtime = body_data.get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
+            existing_cost    = body_data.get(KEY_TOTAL_COST, 0.0)
+            new_cost         = (new_runtime_minutes / 60.0) * cost_per_hour
+            body_data[KEY_TOTAL_RUNTIME_MINUTES] = existing_runtime + new_runtime_minutes
+            body_data[KEY_TOTAL_COST]            = existing_cost + new_cost
+            _LOG.debug(f"...runtime[{new_runtime_minutes:.1f} min] total[{body_data[KEY_TOTAL_RUNTIME_MINUTES]:.1f} min]")
+            _LOG.debug(f"...cost[+${new_cost:.2f}] total[${body_data[KEY_TOTAL_COST]:.2f}]")
+
+            ### Only advance highwater mark if we actually merged samples
+            ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
             new_highwater_ts = max(end for _, end in new_closed)
             body_data[KEY_HIGHWATER_TS] = new_highwater_ts
             _LOG.debug(f"...Advancing highwater mark to [{local_time(new_highwater_ts)}]")
@@ -169,7 +186,7 @@ class Persistence:
         # --- Update metadata -----------------------------------------------------
         body_data[KEY_RATE_TABLE]           = rate_table
         body_data[KEY_LAST_UPDATED]         = datetime.now(timezone.utc).isoformat()
-        body_data[KEY_SAMPLE_COUNT]         = self.sample_count
+        body_data[KEY_SAMPLE_COUNT]         = self._sample_count
         body_data[KEY_LAST_MERGE_INTERVALS] = intervals_used
         body_data[KEY_LAST_MERGE_ADDED]     = merged
         body_data[KEY_LAST_MERGE_PRUNED]    = pruned
@@ -177,11 +194,7 @@ class Persistence:
         self._data[self._body_type] = body_data
         await self.async_save()
 
-        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] merged[{merged}] pruned[{pruned}] total_samples[{self.sample_count}]")
-
-
-
-
+        _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] merged[{merged}] pruned[{pruned}] total_samples[{self._sample_count}]")
 
 
     def get_rate_table(self) -> dict:
@@ -189,7 +202,7 @@ class Persistence:
         Return rate table in the format _weighted_rate() expects:
         {air_bin_int: [rate, ...]}  (timestamps stripped)
         """
-        body_data  = self.body_data
+        body_data  = self._body_data
         rate_table = body_data.get("rate_table", {})
 
         return {
@@ -202,7 +215,7 @@ class Persistence:
         """
         Return data for display in HA Integrations page diagnostics.
         """
-        body_data  = self.body_data
+        body_data  = self._body_data
         rate_table = body_data.get("rate_table", {})
 
         bins = {}
@@ -229,14 +242,29 @@ class Persistence:
         }
 
     # -------------------------------------------------------------------------
-    # Private helpers
+    # Public properties
+    # -------------------------------------------------------------------------
+    @property
+    def total_runtime_minutes(self) -> float:
+        return self._body_data.get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
+
+    @property
+    def total_cost(self) -> float:
+        return self._body_data.get(KEY_TOTAL_COST, 0.0)
+    
+    @property
+    def body_data(self) -> dict:
+        return self._body_data
+
+    # -------------------------------------------------------------------------
+    # Private properties
     # -------------------------------------------------------------------------
 
     @property
-    def body_data(self) -> dict:
+    def _body_data(self) -> dict:
         return self._data.setdefault(self._body_type, {})
 
     @property
-    def sample_count(self) -> int:
-        rate_table = self.body_data.get("rate_table", {})
+    def _sample_count(self) -> int:
+        rate_table = self._body_data.get("rate_table", {})
         return sum(len(s) for s in rate_table.values())

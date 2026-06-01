@@ -39,20 +39,20 @@ class ESPRatesView(HomeAssistantView):
 
     async def get(self, request):
         hass = request.app["hass"]
-
-        # Load from any body type — top level data is shared
-        p = Persistence(hass, BODY_TYPES[0])
-        await p.async_load()
+        coordinator = self._get_coordinator(hass)
 
         result = {
-            "pool_type": p._data.get("pool_type", "Unknown"),
+            "pool_type": coordinator._pool_adapter.name,
             "bodies":    {}
         }
 
         for body_type in BODY_TYPES:
-            p = Persistence(hass, body_type)
-            await p.async_load()
-            result["bodies"][body_type] = p.body_data
+            p = coordinator.get_persistence(body_type)
+            result["bodies"][body_type] = {
+                **p.body_data,                              # rate_table, highwater_ts, etc.
+                "total_runtime_minutes": p.total_runtime_minutes,
+                "total_cost":            round(p.total_cost, 2),
+            }            
         
         return self.json(result)
 
@@ -60,15 +60,24 @@ class ESPRatesView(HomeAssistantView):
         hass = request.app["hass"]
         data = await request.json()
         bodies = data.get("bodies", {})
+        coordinator = self._get_coordinator(hass)
 
         for body_type, body_data in bodies.items():
-            p = Persistence(hass, body_type)
+            p = coordinator.get_persistence(body_type)
             await p.async_load()
             p._data["pool_type"] = data.get("pool_type", "Unknown") # Ensure pool_type is saved at top level for easy access
             p._data[body_type] = body_data
             await p.async_save()
             
         return self.json({"status": "ok"})
+    
+    def _get_coordinator(self, hass):
+        entries = hass.config_entries.async_entries(DOMAIN)
+        if not entries:
+            raise RuntimeError("Integration not loaded")
+        
+        coordinator = hass.data[DOMAIN][entries[0].entry_id][ADDONS_COORDINATOR]
+        return coordinator
 
 
 def _start_debugger():

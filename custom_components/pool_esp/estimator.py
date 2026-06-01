@@ -4,15 +4,12 @@ import bisect
 import json
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
-from custom_components.pool_esp.sensor import HeaterRuntimeSensor
+from .sensor import HeaterCostSensor, HeaterRuntimeSensor
 
 from .const import STATUS_LEARNING
-import debugpy
 
 from .persistence import Persistence
-from .util import *
 from .coordinator import *
 
 _LOG = logging.getLogger(__name__)
@@ -163,6 +160,7 @@ class ESPEstimator:
         from homeassistant.components.recorder import get_instance
 
         body_config = self._coordinator.get_config(self._body_type)
+        cost_per_hour = self._coordinator.get_option(CONF_GAS_COST_PER_THERM, 0.0) if self._coordinator.get_option(CONF_HEATER_FUEL_TYPE, "gas") == "gas" else self._coordinator.get_option(CONF_ELECTRIC_COST_PER_KWH, 0.0)
         _LOG.debug(f"calculate: [{self._body_type}]")
 
         instance  = get_instance(self._hass)
@@ -235,10 +233,9 @@ class ESPEstimator:
             ###
             used  = result["used"]
             pool_type = self._coordinator.pool_adapter.name
-            persistence = Persistence(self._hass, self._body_type, pool_type)
-            await persistence.async_load()
+            persistence:Persistence = self._coordinator.get_persistence(self._body_type)
             if export: ## export means running live data, so merge results
-                await persistence.merge_and_save(table, heating_intervals, used)
+                await persistence.merge_and_save(table, heating_intervals, used, cost_per_hour)
 
             ### After merging, reload the full rate
             table = persistence.get_rate_table()
@@ -453,13 +450,10 @@ class ESPEstimator:
             if is_on and on_start is None:              ### Heater turned ON
                 on_start = ts
             elif not is_on and on_start is not None:    ### Heater turned OFF
-                duration_min = (ts - on_start) / 60.0
+                self._heating_costs(on_start, ts)
                 intervals.append((on_start, ts, False))  # ← 3-tuple, closed
                 on_start = None
 
-                # Update cost and runtime sensors
-                self._coordinator.get_sensor(self._body_type, HeaterCostSensor).add_interval_cost(duration_min)
-                self._coordinator.get_sensor(self._body_type, HeaterRuntimeSensor).add_interval_runtime(duration_min)   
 
         # Close open interval if heater still on
         if on_start is not None and now_ts is not None:
@@ -473,6 +467,13 @@ class ESPEstimator:
             _LOG.debug(f"...start[{start_ts:.0f} {time_str}] duration[{duration_min:4.1f}m] is_open[{is_open}]")
 
         return intervals
+
+
+    def _heating_costs(self, on_start:float, ts:float):
+        duration_min = (ts - on_start) / 60.0
+        self._coordinator.get_sensor(self._body_type, HeaterCostSensor).add_interval_cost(duration_min)
+        self._coordinator.get_sensor(self._body_type, HeaterRuntimeSensor).add_interval_runtime(duration_min)   
+
 
     # -------------------------------------------------------------------------
     # Rate table construction
