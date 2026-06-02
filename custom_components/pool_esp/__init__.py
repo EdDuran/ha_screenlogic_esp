@@ -1,28 +1,29 @@
 from __future__ import annotations
-from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, callback
+import traceback
+from custom_components.pool_esp.test_runner import run_scenario
+from custom_components.pool_esp.util import PoolAdapter, start_debugger
+from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, HomeAssistantError
 from homeassistant.components.homeassistant import IssueSeverity
 from homeassistant.helpers.device_registry import DeviceEntry
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceValidationError
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import device_registry as dr
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.frontend import async_register_built_in_panel, async_remove_panel
 
 
 from .panel import register_panel, unregister_panel
 from .persistence import Persistence
 from .const import (
+    BODY_TYPES,
+    CONF_SHOW_PANEL,
     DOMAIN,
     PLATFORMS,
     ADDONS_COORDINATOR,
     POOL_ADAPTER_CONFIG,
     DEFAULT_POOL_ADAPTER
 )
-from .util import *
-from .test_runner import *
 import logging
-import debugpy
 import os
 import shutil
 
@@ -80,28 +81,6 @@ class ESPRatesView(HomeAssistantView):
         return coordinator
 
 
-def _start_debugger():
-
-    _LOG.debug(f"__init__._start_debugger: Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
-
-    if not os.getenv("HA_DEBUG"):
-        _LOG.debug("HA_DEBUG is not set...Debugging will not be available")
-        return
-
-    try:
-        debugpy.listen(("0.0.0.0",5678))
-        _LOG.debug("__init__.Debugger listening on 5678")
-    except RuntimeError:
-        _LOG.warning("__init__.Debugger already active")
-
-    if not debugpy.is_client_connected():
-        _LOG.warning("Waiting for debugger attach...")
-        debugpy.wait_for_client()
-
-        debugpy.breakpoint()
-
-    _LOG.debug("__init__.Debugger attached")
-
 ###
 ### ----- Reload Integration ---------------------------------------------------
 ###
@@ -132,21 +111,13 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 ###
 ### ----- Setup ----------------------------------------------------------------
 ###
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    _LOG.debug(f"__init__.async_setup")
 
-    _LOG.debug(f"__init__.setup")
-
-    ## Save ESP configuration
+    ## Save Pool ESP configuration
     hass.data.setdefault(DOMAIN, {})
     if DOMAIN in config:
         hass.data[DOMAIN]["yaml_config"] = config[DOMAIN]
-
-
-    # Return boolean to indicate that initialization was successful.
-    return True
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    _LOG.debug(f"__init__.async_setup")
 
     await _async_copy_www_assets(hass)
 
@@ -178,7 +149,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
 
     _LOG.debug(f"__init__.async_setup_entry")
 
-    await hass.async_add_executor_job(_start_debugger)
+    await start_debugger(hass)
 
     # Register reload handler
     config_entry.async_on_unload(
@@ -201,7 +172,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     try:
         pool_adapter:PoolAdapter = await PoolAdapter.create(hass, adapter_name)
     except Exception as e:
-        _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
+        _LOG.error(f"Failed to initialize Pool ESP integration: {e}")
 
         ir.async_create_issue(
             hass,
@@ -213,7 +184,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
         )
         # Don't fail setup entirely — just raise ConfigEntryNotReady
         # HA will retry setup automatically
-        raise ConfigEntryNotReady(f"Failed to initialize integration") from e
+        raise ConfigEntryNotReady(f"Failed to initialize Pool ESP integration") from e
     
     ###
     ### Create ESP Coordinator with the Pool Adapter's Configuration
@@ -266,8 +237,6 @@ async def _async_copy_www_assets(hass:HomeAssistant):
 
     def _copy():
         try:
-            _LOG.debug(f"Copying assets from {source_dir} to {dest_dir}...")
-
             os.makedirs(dest_dir, exist_ok=True)
             if os.path.exists(source_dir):
                 for filename in os.listdir(source_dir):

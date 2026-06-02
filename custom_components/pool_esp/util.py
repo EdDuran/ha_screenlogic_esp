@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 import importlib
 import logging
+import os
 from string import Template
 from abc import ABC, abstractmethod
 from zoneinfo import ZoneInfo
+import debugpy
 from homeassistant.core import HomeAssistant
 
 from .const import RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, SM_START
@@ -12,6 +14,35 @@ from .timer import Timer
 
 _LOG = logging.getLogger(__name__)
 
+async def start_debugger(hass: HomeAssistant):
+    await hass.async_add_executor_job(_start_debugger)
+
+def _start_debugger():
+    _LOG.debug(f"Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
+
+    if not os.getenv("HA_DEBUG"):
+        _LOG.debug("HA_DEBUG is not set...Debugging will not be available")
+        return
+
+    try:
+        debugpy.listen(("0.0.0.0",5678))
+        _LOG.debug("__init__.Debugger listening on 5678")
+    except RuntimeError:
+        _LOG.warning("FYI: Debugger is already active")
+
+    if not debugpy.is_client_connected():
+        _LOG.warning("Waiting for debugger attach...")
+        debugpy.wait_for_client()
+
+        debugpy.breakpoint()
+
+    _LOG.debug("Debugger attached")
+
+def breakpoint():
+    if debugpy.is_client_connected():
+        debugpy.breakpoint()
+    else:
+        _LOG.warning("Cannot set breakpoint: Debugger is not attached")
 
 def local_time(ts:float, hass:HomeAssistant=None) -> str:
     """
@@ -141,7 +172,7 @@ class PoolAdapter(ABC):
         return self._debug_mode
 
     @abstractmethod
-    def discover():
+    def _discover():
         """ Discover the pool devices """
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -189,6 +220,7 @@ class PoolAdapter(ABC):
             raise
         
         except Exception as e:
+            _LOG.error(f"Failed to create Pool Adapter[{name}]: {e}")
             raise ESPException(f"Failed to create Pool Adapter[{name}]") from e
     
 

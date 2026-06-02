@@ -2,8 +2,29 @@
   "config": {
     "step": {
       "user": {
-        "title": "Pool ESP — Estimate to Set Point",
-        "description": "Automatically configured from your Home Assistant integration"
+        "title": "Pool ESP — Discover Pool Adapter",
+        "description": "Automatically discovering your pool system..."
+      }
+    },
+    "fuel_type": {
+      "title": "Heater Configuration",
+      "data": {
+        "heater_fuel_type": "Heater fuel type",
+        "show_panel": "Show ESP Rate Table in sidebar"
+      }
+    },
+    "gas": {
+      "title": "Gas Heater Settings",
+      "data": {
+        "gas_heater_btu":     "Heater output (BTU/hr)",
+        "gas_cost_per_therm": "Gas cost per therm ($)"
+      }
+    },
+    "electric": {
+      "title": "Electric/Heat Pump Settings",
+      "data": {
+        "electric_heater_kw":    "Heater power (kW)",
+        "electric_cost_per_kwh": "Electricity cost per kWh ($)"
       }
     },
     "abort": {
@@ -13,7 +34,7 @@
   },
   "options": {
     "step": {
-      "init": {
+      "fuel_type": {
         "title": "Pool ESP Options",
         "data": {
           "show_sidebar_panel": "Show ESP Rates in sidebar",

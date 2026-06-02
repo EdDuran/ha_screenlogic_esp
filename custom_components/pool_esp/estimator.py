@@ -144,7 +144,7 @@ class ESPEstimator:
 
         except Exception as e:
             _LOG.error(traceback.format_exc())
-            _LOG.error(f"calculate_wrapper: Failed to Calculate ESP; {e}")
+            _LOG.error(f"calculate_wrapper: Failed to Calculate Pool ESP; {e}")
             raise e
 
     async def calculate(self, export:bool, history_adapter:HistoryAdapter) -> ESP:
@@ -266,7 +266,7 @@ class ESPEstimator:
                 heater_status  = history_adapter.get_current_value(body_config, CLIMATE_STATUS)
                 if (current_water is None or current_air is None or current_target is None or heater_status is None):
                     _LOG.error(f"calculate: [{self._body_type}] Failed to get all current sensor values")
-                    raise ESPException("ERROR", f"calculate: [{self._body_type}] Failed to get all current sensor values")
+                    raise ESPException("ERROR", f"Failed to get [{self._body_type}] current sensor values")
                 
                 heater_is_on   = heater_status.lower() == HEATER_STATUS_HEATING_VALUE.lower()
             else:
@@ -289,7 +289,7 @@ class ESPEstimator:
                 self._weighted_rate, table, target_bin, AIR_TEMP_BIN_WIDTH,
             )
         except Exception:
-            raise ESPException("ERROR", "calculate: Failed to calculate weighted rate and confidence")
+            raise ESPException("ERROR", "Failed to calculate weighted rate and confidence")
 
         if rate is None:
             _LOG.warning(f"calculate: [{self._body_type}] rate is None")

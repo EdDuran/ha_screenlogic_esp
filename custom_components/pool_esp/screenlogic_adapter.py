@@ -39,7 +39,7 @@ class ScreenlogicAdapter(PoolAdapter):
         self._body_config = {} # Map of BodyTypes to Map<KEYWORD> -> EntityCombo
         self._watch_entities = {} # Map of BodyTypes to List[EntityId]
 
-        self.discover()
+        self._discover()
     
     def __str__(self):
         return f"ScreenLogicAdapter: name[{self._name}] body_types[{self._body_types}] adapter_config[{self._adapter_config}] body_config[{self._body_config}] watch_entities[{self._watch_entities}]"   
@@ -78,7 +78,7 @@ class ScreenlogicAdapter(PoolAdapter):
     ###
     ### ----- discover --------------------------------------------------------
     ###
-    def discover(self) -> dict:
+    def _discover(self) -> dict:
         """
         Discovery Home Assistant ScreenLogic's Pool and Spa Entities.
         Returns a Map of BodyTypes -> a Map of EntityTypes -> Entity Ids
@@ -110,7 +110,7 @@ class ScreenlogicAdapter(PoolAdapter):
         # end for device
 
         if sl_device is None:
-            _LOG.warning(f"No ScreenLogic Device found")
+            _LOG.warning(f"No ScreenLogic Device found; ensure the ScreenLogic integration is set up and configured properly")
             raise ESPException("No ScreenLogic device found")
         
         connections = sl_device.connections
