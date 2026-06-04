@@ -16,5 +16,5 @@ jobs:
       - name: HACS Action validation
         uses: hacs/action@main
         with:
-          categorey: integration
+          category: integration
 
