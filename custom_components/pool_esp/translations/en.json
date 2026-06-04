@@ -51,7 +51,7 @@
   "issues": {
     "missing_pool_adapter": {
       "title": "Pool Adapter integration not found",
-      "description": "ESP requires a Pool Adapter integration to be configured. Add to configuration.yaml and restart."
+      "description": "ESP requires a Pool Adapter integration to be configured. Ensure Screenlogic is installed and configured."
     },
     "heater_performance": {
       "title": "Heater Performance Issue — {body_type}",

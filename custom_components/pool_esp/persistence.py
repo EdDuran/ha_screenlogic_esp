@@ -164,16 +164,9 @@ class Persistence:
 
             rate_table[key] = existing
 
-        # --- Advance high-water mark ---------------------------------------------
+        # --- Advance high-water mark and Heater Costs ------------------------
         if merged > 0 or new_runtime_minutes > 0:
-            ### Update runtime and cost totals — these are used for diagnostics and to determine if the pool is "expensive" to heat
-            existing_runtime = body_data.get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
-            existing_cost    = body_data.get(KEY_TOTAL_COST, 0.0)
-            new_cost         = (new_runtime_minutes / 60.0) * cost_per_hour
-            body_data[KEY_TOTAL_RUNTIME_MINUTES] = existing_runtime + new_runtime_minutes
-            body_data[KEY_TOTAL_COST]            = existing_cost + new_cost
-            _LOG.debug(f"...runtime[{new_runtime_minutes:.1f} min] total[{body_data[KEY_TOTAL_RUNTIME_MINUTES]:.1f} min]")
-            _LOG.debug(f"...cost[+${new_cost:.2f}] total[${body_data[KEY_TOTAL_COST]:.2f}]")
+            self._update_heater_costs(body_data, new_runtime_minutes, cost_per_hour)
 
             ### Only advance highwater mark if we actually merged samples
             ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
@@ -195,6 +188,16 @@ class Persistence:
         await self.async_save()
 
         _LOG.debug(f"Persistence.merge_and_save: [{self._body_type}] merged[{merged}] pruned[{pruned}] total_samples[{self._sample_count}]")
+
+    def _update_heater_costs(self, body_data: dict, new_runtime_minutes: float, cost_per_hour: float):
+        ### Update runtime and cost totals — these are used for diagnostics and to determine if the pool is "expensive" to heat
+        existing_runtime = body_data.get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
+        existing_cost    = body_data.get(KEY_TOTAL_COST, 0.0)
+        new_cost         = (new_runtime_minutes / 60.0) * cost_per_hour
+        body_data[KEY_TOTAL_RUNTIME_MINUTES] = existing_runtime + new_runtime_minutes
+        body_data[KEY_TOTAL_COST]            = existing_cost + new_cost
+        _LOG.debug(f"...runtime[{new_runtime_minutes:.1f} min] total[{body_data[KEY_TOTAL_RUNTIME_MINUTES]:.1f} min]")
+        _LOG.debug(f"...cost[+${new_cost:.2f}] total[${body_data[KEY_TOTAL_COST]:.2f}]")
 
 
     def get_rate_table(self) -> dict:

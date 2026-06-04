@@ -6,11 +6,14 @@
 # Return: RESULT_OFF
 #
 import logging
+from unittest import result
 
-from .const import TIMER_SENSING, STATUS_INITIALIZING, STATUS_ENABLED, STATUS_READY, STATUS_DISABLED, RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, RESULT_TARGETCHANGE
+from opentelemetry import context
+
+from .const import STATUS_UNKNOWN, TIMER_SENSING, STATUS_INITIALIZING, STATUS_ENABLED, STATUS_READY, STATUS_DISABLED, RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, RESULT_TARGETCHANGE
 from .estimator import ESPEstimator
 from .heater_watchdog import HeaterWatchdog
-from .state_machine import SM_NAME, SM_RESULT_WILDCARD, SM_START, SM_BRICK, SM_EXIT
+from .state_machine import SM_NAME, SM_RESULT_WILDCARD, SM_START, SM_BRICK, SM_EXIT, Brick
 from .timer import Timer, TimerCallback
 from .util import ESP, Context, ESPException
 
@@ -26,59 +29,171 @@ STATE_READY       = "ready"
 STATE_MAINTAINING = "maintaining"
 STATE_DISABLED    = "disabled"
 
+BRICK_INITIALIZE = "initialize"
+BRICK_OFF        = "off"
+BRICK_ENABLED    = "enabled"
+BRICK_SENSING    = "sensing"
+BRICK_STANDBY    = "standby"
+BRICK_HEATING    = "heating"
+BRICK_READY      = "ready"
+BRICK_MAINTAINING = "maintaining"
+BRICK_DISABLED   = "disabled"
+
+
 
 
 
 _LOG = logging.getLogger(__name__)
 
-async def _brick_initialize(context: Context) -> str:
-    context.esp = ESP(0, 0, STATUS_INITIALIZING)
-    return context.get_esp_result()
+###############################################################################
+###
+### ----- Initialize Brick ----------------------------------------------------
+###
+###############################################################################
 
-#
-# ----- Brick Off
+@Brick.register(BRICK_INITIALIZE)
+class InitializeBrick(Brick):
+
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
+
+    async def execute(self) -> str:
+        self.context.esp = ESP(0, 0, STATUS_INITIALIZING)
+        return self._get_result()
+
+
+###############################################################################
+###
+### ----- Off Brick -----------------------------------------------------------
+###
+###############################################################################
 #
 # Body Circuit and Heater are Off
 #   Calculate ETA just in case anyone wants to
 #
 # Return: ESP Result
 #
-async def _brick_off(context:Context) -> str:
-    from .estimator import ESPEstimator, ESP
+@Brick.register("off")
+class OffBrick(Brick):
+    
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
 
-    result = context.get_esp_result()
+    async def execute(self) -> str:
+        from .estimator import ESPEstimator, ESP
 
-    try:
-        if result == RESULT_OFF:
-            if context.is_at_setpoint():
-                context.esp = ESP(0,0, STATUS_READY)
-            else:
-                estimator = ESPEstimator(context.coordinator, context.body_type)
-                context.esp = await estimator.calculate_wrapper(context)
-    except Exception as e:
-        _LOG.error(f"_brick_off: Failed to execute: {e}")
-        raise ESPException("ERROR", f"_brick_off: Failed to execute: {e}") from e
+        result = self._get_result()
 
-    return result
+        try:
+            if result in (RESULT_OFF, RESULT_TARGETCHANGE):
+                if self.context.is_at_setpoint():
+                    self.context.esp = ESP(0,0, STATUS_UNKNOWN)
+                else:
+                    estimator = ESPEstimator(self.context.coordinator, self.context.body_type)
+                    self.context.esp = await estimator.calculate_wrapper(self.context)
+        except Exception as e:
+            self._log_error(f"_brick_off: Failed to execute: {e}")
+            raise ESPException("ERROR", f"{self._name}: Failed to execute: {e}") from e
 
-#
-# ----- Brick Enabled
+        return result
+
+###############################################################################
+###
+### ----- Enabled Brick -------------------------------------------------------
+###
+###############################################################################
 #
 # Body and Heater are On
 #
 # Return: ESP Result
 #
-async def _brick_enabled(context:Context) -> str:
-    result = context.get_esp_result()
+@Brick.register("enabled")
+class EnabledBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
+    
+    async def execute(self) -> str:
+        result = self._get_result()
 
-    context.esp = ESP(0,0, STATUS_ENABLED)
+        self.context.prior_target_temp = None    # Reset prior target temp when heater enabled
+        self.context.esp = ESP(0,0, STATUS_ENABLED)
 
-    return result
+        return result
 
 
 ###############################################################################
 ###
-### ----- Brick Heating
+### ----- Sensing Brick -------------------------------------------------------
+###
+###############################################################################
+
+@Brick.register("sensing")
+class SensingBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context) 
+
+    async def execute(self) -> str:
+        """Sensing state — suppress STANDBY until settle timer expires"""
+        import time
+
+        result = self._get_result()
+
+        if self.context.testing:
+            self._log_debug(f"..._brick_sensing: Testing mode is enabled, skipping sensing")
+            return result
+
+        try:
+            timer = self.context.timer
+
+            # ACTIVE or STANDBY - run the timer
+            #
+            if result in [RESULT_ACTIVE, RESULT_STANDBY]:
+                if timer is None: # Create Timer
+                    #
+                    # Start Timer - return STANDBY
+                    #
+                    timer = Timer(
+                        name = f"Sensing-{self.context.body_type}",
+                        hass = self.context.hass,
+                        context = self.context,
+                        callback = SensingCallback(),
+                        duration = TIMER_SENSING,
+                        interval = 5
+                    )
+
+                    self.context.timer = timer
+                    self.context.esp = ESP(TIMER_SENSING, 0, ESP.format_ms(TIMER_SENSING))
+
+                    result = RESULT_STANDBY # Waiting for Timer to complete
+
+                    timer.start()
+                else: # Timer already created
+                    if timer.is_running: # Timer is Running
+                        result = RESULT_STANDBY # Still waiting for timer to complete
+                    else:
+                        result = RESULT_ACTIVE # Done Sensing
+                        await timer.stop()
+                        timer = None
+
+            if result in [RESULT_OFF]:  # Heater off stop timer
+                if (timer is not None):
+                    await timer.stop()
+                    timer = None
+
+            self.context.timer = timer
+
+        except Exception as e:
+            raise ESPException("ERROR", f"Failed to execute Brick Sensing") from e
+
+        #
+        # STANDBY if waiting for Sensing Timer to complete
+        # ACTIVE, OFF if Timer has completed
+        return result
+
+
+###############################################################################
+###
+### ----- Heating Brick ------------------------------------------------------
 ###
 ###############################################################################
 #
@@ -87,205 +202,182 @@ async def _brick_enabled(context:Context) -> str:
 #
 # Return: ESP Result
 #
-async def _brick_heating(context:Context) -> str:
-    from .estimator import ESPEstimator, ESP
+@Brick.register("heating")
+class HeatingBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
+    
+    async def execute(self) -> str:
+        from .estimator import ESPEstimator, ESP
 
-    result = context.get_esp_result()
+        result = self._get_result()
 
-    if result == RESULT_ACTIVE:         # Activly Heating?
-        if context.is_last_degree():    # Last Degree? (Water@Target and Heating)
-            # Y: Return STANDBY
-            #    The water is ready, though the heater may continue to run for a while
-            context.esp = ESP(0,0, STATUS_READY)
-            return RESULT_STANDBY
-        else:
-            # N: Set Status and ESP
-            #    Start Duration Timer to Decrement ESP
-            estimator = ESPEstimator(context.coordinator, context.body_type)
-            esp:ESP = await estimator.calculate_wrapper(context)
-            _LOG.debug(f"HEATING ... ESP: [{context.seconds}] confidence[{context.confidence_pct}%] {context.status}")
-            #
-            # Start Heating Countdown Timer - return ACTIVE
-            #
-            timer = context.timer
+        if result in (RESULT_ACTIVE, RESULT_TARGETCHANGE):         # Activly Heating?
+            if self.context.is_last_degree():    # Last Degree? (Water@Target and Heating)
+                # Y: Return STANDBY
+                #    The water is ready, though the heater may continue to run for a while
+                result = RESULT_STANDBY
+            else:
+                # N: Set Status and ESP
+                #    Start Duration Timer to Decrement ESP
+                estimator = ESPEstimator(self.context.coordinator, self.context.body_type)
+                esp:ESP = await estimator.calculate_wrapper(self.context)
+                #
+                # Start Heating Countdown Timer - return ACTIVE
+                #
+                timer = self.context.timer
+                if timer is not None:
+                    await timer.stop()
+
+                timer_interval = 5 * 60   # every 5 minutes
+                timer = Timer(
+                    name = f"HeatingCountdown-{self.context.body_type}",
+                    hass = self.context.hass,
+                    context = self.context,
+                    callback = HeatingCallback(),
+                    duration = self.context.seconds,
+                    interval = timer_interval
+                )
+                self.context.timer = timer
+                self.context.esp = esp
+                timer.start()
+
+                ###
+                ### Start/Reset HeaterWatchdog based on current heater status and calculated rate
+                ###
+                if esp.rate is not None and esp.degrees_remaining is not None:
+                    watchdog:HeaterWatchdog = self.context.coordinator.get_watchdog(self.context.body_type)
+                    watchdog.start(self.context.water_temp, esp.rate, esp.degrees_remaining)
+                else:
+                    self._log_warning(f"HEATING: [{self.context.body_type}] no rate or degrees remaining data, skipping watchdog")
+        # end if ACTIVE or TARGETCHANGE
+
+        ### STANDBY - Stop the Timer. We're "READY"
+        if result == RESULT_STANDBY:
+            timer = self.context.timer
             if timer is not None:
                 await timer.stop()
+                context.timer = None
+            
+            self.context.coordinator._watchdogs[self.context.body_type].cancel()
 
-            timer_interval = 5 * 60   # every 5 minutes
-            timer = Timer(
-                name = f"HeatingCountdown-{context.body_type}",
-                hass = context.hass,
-                context = context,
-                callback = HeatingCallback(),
-                duration = context.seconds,
-                interval = timer_interval
-            )
-            context.timer = timer
-            context.esp = esp
-            timer.start()
-
-            ###
-            ### Start/Reset HeaterWatchdog based on current heater status and calculated rate
-            ###
-            if esp.rate is not None and esp.degrees_remaining is not None:
-                watchdog:HeaterWatchdog = context.coordinator.get_watchdog(context.body_type)
-                watchdog.start(context.water_temp, esp.rate, esp.degrees_remaining)
-            else:
-                _LOG.warning(f"HEATING: [{context.body_type}] no rate or degrees remaining data, skipping watchdog")
-
-    else: # result in [RESULT_STANDBY, RESULT_OFF]
-        timer = context.timer
-        if (timer is not None):
-            await timer.stop()
-            context.timer = None
+            self.context.esp = ESP(0,0, STATUS_READY)
         
-        context.coordinator._watchdogs[context.body_type].cancel()
+        return result
 
-        context.esp = ESP(0,0, STATUS_READY)
-    
-    return result
 
-#
-# ----- Brick Ready
+###############################################################################
+###
+### ----- Ready Brick ---------------------------------------------------------
+###
+###############################################################################
 #
 # Body and Heater are On. SetPoint reached, Water is Ready
 #
 # Return: ESP Result
 #
-async def _brick_ready(context: Context) -> str:
-    result = context.get_esp_result()
+@Brick.register("ready")
+class ReadyBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
 
-    context.esp = ESP(0, 0, STATUS_READY)
+    async def execute(self) -> str:
+        result = self._get_result()
+        self.context.esp = ESP(0, 0, STATUS_READY)
+        return result
 
-    return result
-
-#
-# ----- Brick Standby
+###############################################################################
+###
+### ----- Standby Brick -------------------------------------------------------
+###
+###############################################################################
 #
 # Body and Heater are On. Is Water at SetPoint?
 #
 # Return: ESP Result
 #
-async def _brick_standby(context: Context) -> str:
-    result = context.get_esp_result()
+@Brick.register("standby")
+class StandbyBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
+        
+    async def execute(self) -> str:
+        result = self._get_result()
+        if (result == RESULT_STANDBY):
+            self.context.esp = ESP(0, 0, STATUS_READY)
+        return result
 
-    if (result == RESULT_STANDBY):
-        context.esp = ESP(0, 0, STATUS_READY)
 
-    return result
-
-#
-# ----- Brick Maintaining
+###############################################################################
+###
+### ----- Maintaining Brick ---------------------------------------------------
+###
+###############################################################################
 #
 # Body and Heater are On: Maintaining the Water Temperature
 #
 # Return: ESP Result
 #
-async def _brick_maintaining(context: Context) -> str:
-    result = context.get_esp_result()
+@Brick.register("maintaining")
+class MaintainingBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
 
-    if result == RESULT_ACTIVE:
-        # Target Temp Change?
-        if context.is_target_change():
-            result = RESULT_TARGETCHANGE
-        else:
-            estimator = ESPEstimator(context.coordinator, context.body_type)
-            esp:ESP = await estimator.calculate_wrapper(context)
-            _LOG.debug(f"MAINTAINING ... ESP: [{context.seconds}] confidence[{context.confidence_pct}%] {context.status}")
+    async def execute(self) -> str:
+        result = self._get_result()
 
-            context.esp = ESP(0, 0, STATUS_READY)
+        if result == RESULT_ACTIVE:
+            estimator = ESPEstimator(self.context.coordinator, self.context.body_type)
+            esp:ESP = await estimator.calculate_wrapper(self.context)
+
             ###
             ### Start/Reset HeaterWatchdog based on current heater status and calculated rate
             ###
             if esp.rate is not None:
                 rate = esp.rate
                 degrees_remaining = esp.degrees_remaining
-                context.coordinator._watchdogs[context.body_type].start(
-                    context.water_temp, rate, degrees_remaining
+                self.context.coordinator._watchdogs[self.context.body_type].start(
+                    self.context.water_temp, rate, degrees_remaining
                 )
+            
+            self.context.esp = ESP(0, 0, STATUS_READY)
         
-    return result
+        return result
 
-#
-# ----- Brick Disabled
+###############################################################################
+###
+### ----- Disabled Brick ------------------------------------------------------
+###
+###############################################################################
 #
 # Body and/or Heater are Off
 #
 # Return: ESP Result
 #
-async def _brick_disabled(context: Context) -> str:
-    result = context.get_esp_result()
+@Brick.register("disabled")
+class DisabledBrick(Brick):
+    def __init__(self, name:str, context:Context):
+        super().__init__(name, context)
 
-    context.esp = ESP(0, 0, STATUS_DISABLED)
-
-    return result
-
-
-#
-# ----- Brick Sensing
-#
-async def _brick_sensing(context:Context) -> str:
-    """Sensing state — suppress STANDBY until settle timer expires"""
-    import time
-
-    result = context.get_esp_result()
-
-    if context.testing:
-        _LOG.debug(f"..._brick_sensing: Testing mode is enabled, skipping sensing")
+    async def execute(self) -> str:
+        result = self._get_result()
+        self.context.esp = ESP(0, 0, STATUS_DISABLED)
         return result
 
-    try:
-        timer = context.timer
 
-        # ACTIVE or STANDBY - run the timer
-        #
-        if result in [RESULT_ACTIVE, RESULT_STANDBY]:
-            if timer is None: # Create Timer
-                #
-                # Start Timer - return STANDBY
-                #
-                timer = Timer(
-                    name = f"Sensing-{context.body_type}",
-                    hass = context.hass,
-                    context = context,
-                    callback = SensingCallback(),
-                    duration = TIMER_SENSING,
-                    interval = 5
-                )
 
-                context.timer = timer
-                context.esp = ESP(TIMER_SENSING, 0, ESP.format_ms(TIMER_SENSING))
+###############################################################################
+###############################################################################
+###############################################################################
 
-                result = RESULT_STANDBY # Waiting for Timer to complete
 
-                timer.start()
-            else: # Timer already created
-                if timer.is_running: # Timer is Running
-                    result = RESULT_STANDBY # Still waiting for timer to complete
-                else:
-                    result = RESULT_ACTIVE # Done Sensing
-                    await timer.stop()
-                    timer = None
 
-        if result in [RESULT_OFF]:  # Heater off stop timer
-            if (timer is not None):
-                await timer.stop()
-                timer = None
-
-        context.timer = timer
-
-    except Exception as e:
-        raise ESPException("ERROR", f"Failed to execute Brick Sensing") from e
-
-    #
-    # STANDBY if waiting for Sensing Timer to complete
-    # ACTIVE, OFF if Timer has completed
-    return result
-
+###############################################################################
 ###
-### ----- Class SensingCallback --------------------------------------------
+### ----- SensingCallback -----------------------------------------------------
 ###
-
+###############################################################################
+#
 class SensingCallback(TimerCallback):
     """
     Sensing Timer Callback
@@ -308,7 +400,7 @@ class SensingCallback(TimerCallback):
             context.confidence_pct = esp.confidence_pct
             context.coordinator.update_sensor(context.body_type)
 
-            _LOG.debug(f"SensingCallback.on_timer_interval: [{timer.name}] remaining[{context.seconds}/{context.status}]")
+            ### _LOG.debug(f"SensingCallback.on_timer_interval: [{timer.name}] remaining[{context.seconds}/{context.status}]")
 
     ###
     ### ----- on_timer_complete
@@ -325,7 +417,8 @@ class SensingCallback(TimerCallback):
         current_state = context.machine_state
 
         if current_state != STATE_SENSING:
-            _LOG.warning(f"...State[{current_state}], not [Sensing] - exiting")
+            ### Edgecase when State moved on and Timer no longer relevant. Just exit and do nothing.
+            ###_LOG.warning(f"...State[{current_state}], not [Sensing] - exiting")
             return
 
         _LOG.debug(f"...Sensing [{context.body_type}] completed")
@@ -350,10 +443,12 @@ class SensingCallback(TimerCallback):
         """Called when timer is stopped externally."""
         _LOG.debug(f"on_timer_cancelled: [{timer.name}]")
 
+###############################################################################
 ###
-### ----- Class HeatingCallback -----------------------------------------------
+### ----- HeatingCallback -----------------------------------------------------
 ###
-
+###############################################################################
+#
 class HeatingCallback(TimerCallback):
     """
     Heating Timer Callback
@@ -393,7 +488,8 @@ class HeatingCallback(TimerCallback):
         current_state = context.machine_state
 
         if current_state != STATE_HEATING:
-            _LOG.warning(f"...State[{current_state}], not [Heating] - exiting")
+            ### Edgecase when State moved on and Timer no longer relevant. Just exit and do nothing.
+            ###_LOG.warning(f"...State[{current_state}], not [Heating] - exiting")
             return
 
         ###
@@ -417,75 +513,77 @@ class HeatingCallback(TimerCallback):
         _LOG.debug(f"HeatingCallback.on_timer_cancelled: [{timer.name}]")
 
 
-# ---------------------------------------------------------------------------
-# STATE MACHINE TRANSITION TABLE
-# ---------------------------------------------------------------------------
+###############################################################################
+###
+### ----- State Machine Transition Table --------------------------------------
+###
+###############################################################################
 #
 # Result Definitions:
-#    OFF     - Circuit Off
-#    STANDBY - Circuit On, Heater Enabled, Not Activly Heating
-#    ACTIVE  - Circuit On, Heater Enabled, Activly Heating
+#    OFF          - Circuit Off
+#    STANDBY      - Circuit On, Heater Enabled, Not Activly Heating
+#    ACTIVE       - Circuit On, Heater Enabled, Activly Heating
+#    TARGETCHANGE - Target Temperature has changed (increased)
 #
 STATE_TRANSITIONS = {
     SM_START: {
-        SM_NAME:              "initialize",
-        SM_BRICK:             _brick_initialize,
-        SM_RESULT_WILDCARD:   STATE_OFF
+        SM_BRICK:             BRICK_INITIALIZE,
+        SM_RESULT_WILDCARD:   STATE_OFF,
+        RESULT_TARGETCHANGE:  STATE_OFF
     },
     STATE_OFF: {
-        SM_NAME:              "off",
-        SM_BRICK:             _brick_off,
+        SM_BRICK:             BRICK_OFF,
         RESULT_ACTIVE:        STATE_ENABLED,
         RESULT_STANDBY:       STATE_ENABLED,
-        RESULT_OFF:           SM_EXIT          # Remain in this State
+        RESULT_OFF:           SM_EXIT,         # Remain in this State
+        RESULT_TARGETCHANGE:  STATE_ENABLED
     },
     STATE_ENABLED: {
-        SM_NAME:              "enabled",
-        SM_BRICK:             _brick_enabled,
+        SM_BRICK:             BRICK_ENABLED,
         RESULT_ACTIVE:        STATE_SENSING,
         RESULT_STANDBY:       STATE_SENSING,
-        RESULT_OFF:           STATE_DISABLED
+        RESULT_OFF:           STATE_DISABLED,
+        RESULT_TARGETCHANGE:  STATE_SENSING
     },
     STATE_SENSING: {
-        SM_NAME:              "sensing",
-        SM_BRICK:             _brick_sensing,
+        SM_BRICK:             BRICK_SENSING,
         RESULT_ACTIVE:        STATE_HEATING,
         RESULT_STANDBY:       SM_EXIT,          # Remain in this State
-        RESULT_OFF:           STATE_DISABLED
-
+        RESULT_OFF:           STATE_DISABLED,
+        RESULT_TARGETCHANGE:  SM_EXIT           # Target Change? Keep sensing
     },
     STATE_HEATING: {
-        SM_NAME:              "heating",
-        SM_BRICK:             _brick_heating,
+        SM_BRICK:             BRICK_HEATING,
         RESULT_ACTIVE:        SM_EXIT,          # Remain in this State
         RESULT_STANDBY:       STATE_READY,
-        RESULT_OFF:           STATE_DISABLED
+        RESULT_OFF:           STATE_DISABLED,
+        RESULT_TARGETCHANGE:  SM_EXIT           # Ignore Target Temp changes while heating, will pick up on next cycle when re-evaluated
     },
     STATE_READY: {
-        SM_NAME:              "ready",
-        SM_BRICK:             _brick_ready,
+        SM_BRICK:             BRICK_READY,
         RESULT_ACTIVE:        STATE_MAINTAINING,
         RESULT_STANDBY:       SM_EXIT,          # Remain in this State
-        RESULT_OFF:           STATE_DISABLED
+        RESULT_OFF:           STATE_DISABLED,
+        RESULT_TARGETCHANGE:  STATE_HEATING     # Target Temp changes while at setpoint should trigger heating again
     },
     STATE_STANDBY: {
-        SM_NAME:              "standby",
-        SM_BRICK:            _brick_standby,
+        SM_BRICK:             BRICK_STANDBY,
         RESULT_ACTIVE:        STATE_MAINTAINING,
         RESULT_STANDBY:       SM_EXIT,
-        RESULT_OFF:           STATE_DISABLED
-    },
+        RESULT_OFF:           STATE_DISABLED,
+        RESULT_TARGETCHANGE:  STATE_HEATING     # Target Temp changes while at setpoint should trigger heating again
+   },
     STATE_MAINTAINING: {
-        SM_NAME:              "maintaining",
-        SM_BRICK:             _brick_maintaining,
+        SM_BRICK:             BRICK_MAINTAINING,
         RESULT_ACTIVE:        SM_EXIT,
         RESULT_STANDBY:       STATE_STANDBY,
         RESULT_OFF:           STATE_DISABLED,
-        RESULT_TARGETCHANGE:  STATE_HEATING
+        RESULT_TARGETCHANGE:  STATE_HEATING     # Target Temp changes while at setpoint should trigger heating again
     },
     STATE_DISABLED: {
-        SM_NAME:              "disabled",
-        SM_BRICK:             _brick_disabled,
+        SM_BRICK:             BRICK_DISABLED,
         SM_RESULT_WILDCARD:   STATE_OFF
     },
 }
+
+

@@ -1,10 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime
 import importlib
 import logging
 import os
 from string import Template
 from abc import ABC, abstractmethod
 from zoneinfo import ZoneInfo
+from custom_components.pool_esp.const import CONTEXT_PRIOR_TARGET_TEMP
 import debugpy
 from homeassistant.core import HomeAssistant
 
@@ -14,6 +15,9 @@ from .timer import Timer
 
 _LOG = logging.getLogger(__name__)
 
+#
+# Start Debugger
+#
 async def start_debugger(hass: HomeAssistant):
     await hass.async_add_executor_job(_start_debugger)
 
@@ -71,9 +75,11 @@ def parse_entity_change(changes: set) -> tuple[str, str, str]:
 
 
 
+###############################################################################
 ###
-### ----- Class EntityCombo ---------------------------------------------------
+### ----- EntityCombo ---------------------------------------------------------
 ###
+###############################################################################
 
 class EntityCombo:
     def __init__(self, entity_combo:str):
@@ -141,9 +147,12 @@ class EntityCombo:
         return None, None, None
 
 
+###############################################################################
 ###
-### ----- Class PoolAdapter ---------------------------------------------------
+### ----- PoolAdapter ---------------------------------------------------------
 ###
+###############################################################################
+
 class PoolAdapter(ABC):
     import importlib
 
@@ -224,9 +233,12 @@ class PoolAdapter(ABC):
             raise ESPException(f"Failed to create Pool Adapter[{name}]") from e
     
 
+###############################################################################
 ###
-### ----- Class HistoryAdapter -------------------------------------------------
+### ----- HistoryAdapter ------------------------------------------------------
 ###
+###############################################################################
+
 class HistoryAdapter(ABC):
     """
     A base class to adapt and manage historical data.
@@ -272,9 +284,12 @@ class HistoryAdapter(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+
+###############################################################################
 ###
-### ----- Class ESP ------------------------------------------------------------
+### ----- ESP -----------------------------------------------------------------
 ###
+###############################################################################
 
 class ESP:
     """
@@ -372,9 +387,12 @@ class ESP:
         self._degrees_remaining = value 
 
 
+###############################################################################
 ###
-### ----- Class ESPException ---------------------------------------------------
+### ----- ESPException --------------------------------------------------------
 ###
+###############################################################################
+
 class ESPException(Exception):
     """
     Exception raised by ESP services.
@@ -385,9 +403,12 @@ class ESPException(Exception):
         self.status = status
         self.detail = detail
 
+
+###############################################################################
 ###
-### ----- Class Config ---------------------------------------------------------
+### ----- Config --------------------------------------------------------------
 ###
+###############################################################################
 
 class Config():
     """
@@ -399,9 +420,12 @@ class Config():
     def __str__(self) -> str:
         return f"{self._config}"
 
+
+###############################################################################
 ###
-### ----- Class Context --------------------------------------------------------
+### ----- Context -------------------------------------------------------------
 ###
+###############################################################################
 
 class Context():
     """
@@ -489,6 +513,15 @@ class Context():
     @water_temp.setter
     def water_temp(self, value):
         self._context[CONTEXT_WATER_TEMP] = value
+
+
+    @property
+    def prior_target_temp(self) -> float:
+        return self._context.get(CONTEXT_PRIOR_TARGET_TEMP, None)
+
+    @prior_target_temp.setter
+    def prior_target_temp(self, value):
+        self._context[CONTEXT_PRIOR_TARGET_TEMP] = value
 
 
     @property
@@ -669,28 +702,35 @@ class Context():
     
     def is_target_change(self) -> bool:
         """Is the Body Target Temperature changed value? """
+        target_temp = self.target_temp
+        prior_target_temp = self.prior_target_temp
+
         target_change:bool = False
 
-        if self.changes:
+        if prior_target_temp is not None and target_temp is not None and self.changes is not None:
             for change in self.changes:
                 body_type, attr, value = parse_entity_change(change)
-                _LOG.debug(f"...{body_type} : {attr} : {value}")
-                target_change = body_type == self.body_type and attr == ATTR_TEMP
-
-        _LOG.debug(f"_is_target_change({self.changes})? --> [{target_change}]")
+                if (body_type == self.body_type and attr == ATTR_TEMP):
+                    target_change = target_temp > prior_target_temp
+        ###
+        ### After executing: ESPCoordinator._execute_with_current_data ...
+        ###   self.prior_target_temp = target_temp    # Update prior target temp for next time
 
         return target_change
     
     def get_esp_result(self) -> str:
         """
         Get the State Machine signal from current sensor values.
-            OFF     Circuit Off or Heater Disabled
-            ACTIVE  Circuit On and Heater On
-            STANDBY Circuit On and Heater Enabled
+            OFF           Circuit Off or Heater Disabled
+            ACTIVE        Circuit On and Heater On
+            STANDBY       Circuit On and Heater Enabled
+            TARGETCHANGE  Circuit On and Heater Enabled and Target Temp Increased
         """
         result = RESULT_OFF
         if (self.is_circuit_on() and self.is_heat_enabled()):
             result = RESULT_ACTIVE if self.is_heating() else RESULT_STANDBY
+        
+        result = RESULT_TARGETCHANGE if self.is_target_change() else result
 
         return result
     

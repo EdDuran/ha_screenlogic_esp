@@ -56,8 +56,9 @@ CONTEXT_SECONDS             = "seconds"         # ESP Seconds Remaining
 CONTEXT_CONFIDENCE_PCT      = "confidence"      # ESP Confidence
 CONTEXT_TIMESTAMP           = "timestamp"       # Current data Timestamp
 CONTEXT_WATER_TEMP          = "water_temp"      # Body Water Temp
-CONTEXT_TARGET_TEMP         = "target_temp"     # Body Target Water Temp
-CONTEXT_AIR_TEMP            = "air_temp"        # Air Temperature
+CONTEXT_TARGET_TEMP         = "target_temp"         # Body Target Water Temp
+CONTEXT_PRIOR_TARGET_TEMP   = "prior_target_temp"   # Body Prior Target Water Temp
+CONTEXT_AIR_TEMP            = "air_temp"            # Air Temperature
 CONTEXT_CHANGES             = "changes"         # Latest Changes
 CONTEXT_CLIMATE_STATUS      = "climate_status"  # Heating Status (idle, heating)
 CONTEXT_CLIMATE_MODE        = "climate_mode"    # Heating Mode (off, heat)
@@ -132,6 +133,7 @@ STATUS_LEARNING         = "Learning"        # Insufficent Heat/Air/Water data
 STATUS_HEATING          = "Heating"         # Circuit/Heat is On and Heating
 STATUS_READY            = "Ready"           # Reached Set Point; only occurs once
 STATUS_DISABLED         = "Disabled"        # Heater Disabled
+STATUS_UNKNOWN          = "Unknown"         # No measurements to determine status
 
 
 STATUS_ERROR            = "Error"           # An error has occurred 

@@ -268,10 +268,12 @@ class ESPCoordinator(DataUpdateCoordinator):
             context.sm_state        = cause
             context.export          = True  # Export history data
 
-            #
-            # Execute State Machine - Bricks save STATUS & ESP in the Context
-            #
+            ###
+            ### Execute State Machine - Bricks save STATUS & ESP in the Context
+            ### Update the prior target temperature for the next go around
+            ###
             await StateMachine(STATE_TRANSITIONS,context, cause).execute()
+            context.prior_target_temp = context.target_temp 
 
             esp = context.esp
             if esp is not None:

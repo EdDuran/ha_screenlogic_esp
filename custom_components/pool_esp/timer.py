@@ -133,7 +133,7 @@ class Timer:
             except Exception as e:
                 _LOG.error(f"Timer[{self._name}]: on_timer_complete() failed; {e}")
         except asyncio.CancelledError:
-                _LOG.debug(f"Timer[{self._name}]: has been programmatically CANCELLED")
+                _LOG.debug(f"Timer[{self._name}]: CANCELLED, programmatically")
 
 
 class TimerCallback(Protocol):
