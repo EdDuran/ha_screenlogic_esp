@@ -8,12 +8,14 @@
 import logging
 from unittest import result
 
+from custom_components.pool_esp.coordinator import ESPCoordinator
+from custom_components.pool_esp.sensor import ESPSensor
 from opentelemetry import context
 
 from .const import STATUS_UNKNOWN, TIMER_SENSING, STATUS_INITIALIZING, STATUS_ENABLED, STATUS_READY, STATUS_DISABLED, RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, RESULT_TARGETCHANGE
 from .estimator import ESPEstimator
 from .heater_watchdog import HeaterWatchdog
-from .state_machine import SM_NAME, SM_RESULT_WILDCARD, SM_START, SM_BRICK, SM_EXIT, Brick
+from .state_machine import SM_RESULT_WILDCARD, SM_START, SM_BRICK, SM_EXIT, Brick
 from .timer import Timer, TimerCallback
 from .util import ESP, Context, ESPException
 
@@ -84,16 +86,14 @@ class OffBrick(Brick):
 
         result = self._get_result()
 
-        try:
-            if result in (RESULT_OFF, RESULT_TARGETCHANGE):
-                if self.context.is_at_setpoint():
-                    self.context.esp = ESP(0,0, STATUS_UNKNOWN)
-                else:
-                    estimator = ESPEstimator(self.context.coordinator, self.context.body_type)
-                    self.context.esp = await estimator.calculate_wrapper(self.context)
-        except Exception as e:
-            self._log_error(f"_brick_off: Failed to execute: {e}")
-            raise ESPException("ERROR", f"{self._name}: Failed to execute: {e}") from e
+        if result in (RESULT_OFF, RESULT_TARGETCHANGE):
+            if self.context.circuit == "off" and self.context.is_at_setpoint():
+                self.context.esp = ESP(0,0, STATUS_UNKNOWN)
+            else:
+                estimator = ESPEstimator(self.context.coordinator, self.context.body_type)
+                self.context.esp = await estimator.calculate_wrapper(self.context)
+
+            result = RESULT_OFF
 
         return result
 
@@ -183,7 +183,7 @@ class SensingBrick(Brick):
             self.context.timer = timer
 
         except Exception as e:
-            raise ESPException("ERROR", f"Failed to execute Brick Sensing") from e
+            raise ESPException(f"Failed to execute Brick Sensing") from e
 
         #
         # STANDBY if waiting for Sensing Timer to complete
@@ -249,7 +249,7 @@ class HeatingBrick(Brick):
                     watchdog:HeaterWatchdog = self.context.coordinator.get_watchdog(self.context.body_type)
                     watchdog.start(self.context.water_temp, esp.rate, esp.degrees_remaining)
                 else:
-                    self._log_warning(f"HEATING: [{self.context.body_type}] no rate or degrees remaining data, skipping watchdog")
+                    self._log_debug(f"[{self.context.body_type}] no rate or degrees remaining data, skipping watchdog")
         # end if ACTIVE or TARGETCHANGE
 
         ### STANDBY - Stop the Timer. We're "READY"
@@ -398,7 +398,8 @@ class SensingCallback(TimerCallback):
             context.status = esp.status
             context.seconds = esp.seconds
             context.confidence_pct = esp.confidence_pct
-            context.coordinator.update_sensor(context.body_type)
+            coordinator:ESPCoordinator = context.coordinator
+            coordinator.update_sensor(context.body_type, "esp")
 
             ### _LOG.debug(f"SensingCallback.on_timer_interval: [{timer.name}] remaining[{context.seconds}/{context.status}]")
 
@@ -536,7 +537,7 @@ STATE_TRANSITIONS = {
         RESULT_ACTIVE:        STATE_ENABLED,
         RESULT_STANDBY:       STATE_ENABLED,
         RESULT_OFF:           SM_EXIT,         # Remain in this State
-        RESULT_TARGETCHANGE:  STATE_ENABLED
+        RESULT_TARGETCHANGE:  SM_EXIT
     },
     STATE_ENABLED: {
         SM_BRICK:             BRICK_ENABLED,

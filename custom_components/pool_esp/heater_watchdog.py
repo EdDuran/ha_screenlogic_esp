@@ -66,16 +66,17 @@ class HeaterWatchdog:
             f"HeatingWatchdog: STARTED [{self._body_type}] baseline=[{current_temp:.1f}] rate=[{rate:.2f}] degrees_remaining[{degrees_remaining:.1f}] check_in[{check_min:.1f}min]"
         )
 
-    def cancel(self):
+    def cancel(self, verbose:bool = True):
         """Cancel the current watchdog timer."""
         if self._unsub:
             self._unsub()
             self._unsub = None
-            _LOG.debug(f"HeatingWatchdog: CANCELLED [{self._body_type}]")
+            if verbose:
+                _LOG.debug(f"HeatingWatchdog: CANCELLED [{self._body_type}]")
 
     async def _check(self, now):
         """Called when the watchdog timer fires."""
-        self.cancel()
+        self.cancel(False)
 
         try:
             body_config   = self._coordinator.get_config(self._body_type)
@@ -93,12 +94,7 @@ class HeaterWatchdog:
             expected_rise = elapsed_min / self._expected_rate  # degrees we should have gained
             actual_rise   = current_temp - self._baseline_temp
 
-            _LOG.debug(
-                f"Watchdog._check: [{self._body_type}] "
-                f"elapsed={elapsed_min:.1f}min "
-                f"expected_rise={expected_rise:.2f}F "
-                f"actual_rise={actual_rise:.2f}F"
-            )
+            _LOG.debug(f"Watchdog._check: [{self._body_type}] elapsed={elapsed_min:.1f}min expected_rise={expected_rise:.2f}F actual_rise={actual_rise:.2f}F")
 
             if actual_rise < (expected_rise * WATCHDOG_THRESHOLD):
                 # Temperature not rising as expected — flag it
@@ -114,15 +110,12 @@ class HeaterWatchdog:
         """Raise a persistent HA issue for the heater problem."""
         from homeassistant.helpers import issue_registry as ir
 
-        _LOG.warning(
-            f"Watchdog: [{self._body_type}] HEATER ISSUE DETECTED — "
-            f"expected +{expected_rise:.1f}F got +{actual_rise:.1f}F"
-        )
+        _LOG.warning(f"Watchdog: [{self._body_type}] HEATER ISSUE DETECTED — expected +{expected_rise:.1f}F got +{actual_rise:.1f}F")
 
         ir.async_create_issue(
             self._coordinator.hass,
             DOMAIN,
-            f"heater_performance_{self._body_type}",
+            f"heater_performance",
             is_fixable    = True,
             severity      = ir.IssueSeverity.WARNING,
             translation_key = "heater_performance",

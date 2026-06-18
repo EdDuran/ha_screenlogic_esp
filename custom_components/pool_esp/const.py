@@ -1,7 +1,8 @@
 from homeassistant.const import Platform
 
 DOMAIN = "pool_esp"
-SCREENLOGIC_DOMAIN = "screenlogic"
+INTEGRATION_NAME = "Pool ESP"
+MANUFACTURER = "Strebor Tech"
 
 # List of Entity Platforms which the ESP supports
 PLATFORMS: list[Platform] = [
@@ -78,13 +79,15 @@ CONF_ELECTRIC_COST_PER_KWH  = "electric_cost_per_kwh"
 CONF_GAS_HEATER_BTU         = "gas_heater_btu"
 CONF_GAS_COST_PER_THERM     = "gas_cost_per_therm"
 
-POOL_ADAPTER_CONFIG = "adapter"
+POOL_ADAPTER_CONFIG  = "adapter"
 DEFAULT_POOL_ADAPTER = "screenlogic_adapter"
-POOL_PREFIX   = "pool_prefix"
-POOL_MODEL    = "pool_model"
-POOL_NAME     = "pool_name"
-POOL_ID       = "pool_id"
-POOL_UNIQUE_ID = "pool_unique_id"
+POOL_PREFIX          = "prefix"
+POOL_MODEL           = "model"
+POOL_MANUFACTURER    = "manufacturer"
+POOL_NAME            = "name"
+POOL_TECHNOLOGY      = "technology"
+POOL_UNIQUE_ID       = "unique_id"
+POOL_DOMAIN          = "domain"
 
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"
@@ -153,3 +156,6 @@ CLIMATE_MODE_SOLAR           = "solar"
 CLIMATE_MODE_SOLAR_PREFERRED = "solar_preferred"
 CLIMATE_STATUS_HEATING       = "heating"
 CLIMATE_STATUS_IDLE          = "idle"
+
+ISSUE_HEATER_PERFORMANCE     = "heater_performance"
+ISSUE_POOL_ADAPTER_VALUE     = "pool_adapter_value"

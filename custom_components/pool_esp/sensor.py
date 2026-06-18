@@ -3,14 +3,30 @@ from __future__ import annotations
 from ctypes import cast
 import logging
 
+from custom_components.pool_esp.util import ESP, Context
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.entity import DeviceInfo, HomeAssistant
+from homeassistant.helpers.entity import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.components.sensor import ConfigEntry, SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.const import UnitOfTime
 
-from .util import *
-from .const import CONF_HEATER_FUEL_TYPE, CONF_GAS_COST_PER_THERM, CONF_GAS_HEATER_BTU, CONF_ELECTRIC_HEATER_KW, CONF_ELECTRIC_COST_PER_KWH
-
+from .const import (
+    ADDONS_COORDINATOR,
+    BODY_TYPES,
+    CONF_HEATER_FUEL_TYPE,
+    CONF_GAS_COST_PER_THERM,
+    CONF_GAS_HEATER_BTU,
+    CONF_ELECTRIC_HEATER_KW,
+    CONF_ELECTRIC_COST_PER_KWH,
+    DOMAIN,
+    INTEGRATION_NAME,
+    MANUFACTURER,
+    POOL_NAME,
+    POOL_PREFIX,
+    POOL_TECHNOLOGY,
+    POOL_UNIQUE_ID,
+    SM_START
+)
 
 from typing import TYPE_CHECKING
 
@@ -33,11 +49,39 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry, async_
     _LOG.debug(f"async_setup_entry: Adding sensors: {sensors}")
     async_add_entities(sensors)
 
+###############################################################################
 ###
-### ----- HeaterCostSensor: Exposes estimated heater costs as a SensorEntity. One per body type. -----
+### ----- ESPEntity:
+###       Defines the 'device_info'
 ###
+###############################################################################
 
-class HeaterCostSensor(CoordinatorEntity, SensorEntity):
+class ESPEntity(CoordinatorEntity):
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Links this entity to the Pentair device."""
+
+        adapter_config = self.coordinator.adapter_config
+
+        device_info = DeviceInfo(
+            identifiers={(DOMAIN, adapter_config[POOL_UNIQUE_ID])},
+            name=adapter_config[POOL_NAME],
+            manufacturer=MANUFACTURER,
+            model=f"{INTEGRATION_NAME} via {adapter_config[POOL_TECHNOLOGY]} {adapter_config[POOL_NAME]}",
+            sw_version=self.coordinator.version
+        )
+
+        return device_info
+    
+
+###############################################################################
+###
+### ----- HeaterCostSensor:
+###       Exposes estimated heater costs as a SensorEntity. One per body type.
+###
+###############################################################################
+
+class HeaterCostSensor(ESPEntity, SensorEntity):
     """Accumulates heater operating cost over time."""
 
     _attr_device_class               = SensorDeviceClass.MONETARY
@@ -63,14 +107,14 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        return round(self._coordinator.get_persistence(self._body_type).total_cost, 2)
+        return round(self._coordinator.get_persistence().total_cost(self._body_type), 2)
     
     @property
     def extra_state_attributes(self) -> dict:
         options      = self._coordinator.config_entry.options
         fuel_type    = options.get(CONF_HEATER_FUEL_TYPE, "unknown")
         cost_per_hour = self._get_cost_per_hour(options, fuel_type)
-        runtime_min  = self._coordinator.get_persistence(self._body_type).total_runtime_minutes
+        runtime_min  = self._coordinator.get_persistence().total_runtime_minutes(self._body_type)
 
         attrs = {
             "fuel_type":             fuel_type,
@@ -103,24 +147,6 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
             return round(kw * per_kwh, 2)
         return 0.0
 
-    @property
-    def device_info(self):
-        """Links this entity to the Pool device."""
-
-        adapter_config = self.coordinator.adapter_config
-        prefix = adapter_config[POOL_PREFIX]
-        identifiers = {(DOMAIN, adapter_config[POOL_ID])}
-        name = adapter_config[POOL_NAME]
-
-        device_info = DeviceInfo(
-            identifiers=identifiers,
-            name=name,
-            manufacturer="Strebor Tech",
-            model="Pentair ScreenLogic"
-            ##via_device=(SCREENLOGIC_DOMAIN, config[CONFIG_SCREENLOGIC_ID]),
-        )
-
-        return device_info
 
     def add_interval_cost(self, duration_minutes: float):
         """Called when a heating interval completes."""
@@ -144,11 +170,14 @@ class HeaterCostSensor(CoordinatorEntity, SensorEntity):
 
 # end class HeaterCostSensor
 
+###############################################################################
 ###
-### ----- HeaterRuntimeSensor: Exposes cumulative heater runtime as a SensorEntity. One per body type. -----
+### ----- HeaterRuntimeSensor:
+###       Exposes cumulative heater runtime as a SensorEntity. One per body type.
 ###
+###############################################################################
 
-class HeaterRuntimeSensor(CoordinatorEntity, SensorEntity):
+class HeaterRuntimeSensor(ESPEntity, SensorEntity):
     """Accumulates heater runtime in minutes."""
 
     _attr_device_class               = SensorDeviceClass.DURATION
@@ -174,26 +203,7 @@ class HeaterRuntimeSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        return round(self._coordinator.get_persistence(self._body_type).total_runtime_minutes, 1)
-
-    @property
-    def device_info(self):
-        """Links this entity to the Pool device."""
-
-        adapter_config = self.coordinator.adapter_config
-        prefix = adapter_config[POOL_PREFIX]
-        identifiers = {(DOMAIN, adapter_config[POOL_ID])}
-        name = adapter_config[POOL_NAME]
-
-        device_info = DeviceInfo(
-            identifiers=identifiers,
-            name=name,
-            manufacturer="Strebor Tech",
-            model="Pentair ScreenLogic"
-            ##via_device=(SCREENLOGIC_DOMAIN, config[CONFIG_SCREENLOGIC_ID]),
-        )
-
-        return device_info
+        return round(self._coordinator.get_persistence().total_runtime_minutes(self._body_type), 1)
 
     def add_interval_runtime(self, duration_minutes:float):
         """Called when a heating interval completes."""
@@ -203,28 +213,30 @@ class HeaterRuntimeSensor(CoordinatorEntity, SensorEntity):
 
 # end class HeaterRuntimeSensor
 
+###############################################################################
 ###
-### ----- ESPSensor: Exposes ESP state and attributes as a SensorEntity. One per body type. -----
+### ----- ESPSensor:
+###       Exposes ESP state and attributes as a SensorEntity. One per body type.
 ###
+###############################################################################
 
-class ESPSensor(CoordinatorEntity, SensorEntity):
+class ESPSensor(ESPEntity, SensorEntity):
     
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
 
-        from custom_components.pool_esp.bricks import SM_START, STATE_OFF, STATE_ENABLED, STATE_SENSING, STATE_HEATING, STATE_READY, STATE_MAINTAINING, STATE_STANDBY, STATE_DISABLED
+        from custom_components.pool_esp.bricks import STATE_OFF, STATE_ENABLED, STATE_SENSING, STATE_HEATING, STATE_READY, STATE_MAINTAINING, STATE_STANDBY, STATE_DISABLED
 
         super().__init__(coordinator)
 
-        self._coordinator  = coordinator
-        self._body_type    = body_type
-        prefix    = coordinator.adapter_config.get(POOL_PREFIX)
+        self._coordinator = coordinator
+        self._body_type   = body_type
+        prefix            = coordinator.adapter_config.get(POOL_PREFIX)
         
         self._attr_unique_id = f"{prefix}_{body_type}_esp"
         self._attr_name = f"{body_type.capitalize()} ESP"
         self._attr_icon = "mdi:pool-thermometer"
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_options = [
-            SM_START,
             STATE_OFF,
             STATE_ENABLED,
             STATE_SENSING,
@@ -236,7 +248,7 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
         ]
 
     def __str__(self) -> str:
-        return f"ESPSensor[{self._attr_unique_id}] state[{self.native_value}]"
+        return f"ESPSensor({self._attr_unique_id}) state[{self.native_value}]"
 
     @property
     def native_value(self):
@@ -246,7 +258,7 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
             _LOG.error(f"ESPSensor.native_value: [{self._body_type}]Context is None")
             return None
         
-        return context.machine_state
+        return context.machine_state if context.machine_state != SM_START else None
 
     @property
     def extra_state_attributes(self):
@@ -271,25 +283,6 @@ class ESPSensor(CoordinatorEntity, SensorEntity):
             "seconds"        : context.seconds,
             "confidence_pct" : context.confidence_pct
         }
-
-    @property
-    def device_info(self):
-        """Links this entity to the Pentair device."""
-
-        adapter_config = self.coordinator.adapter_config
-        prefix = adapter_config[POOL_PREFIX]
-        identifiers = {(DOMAIN, adapter_config[POOL_ID])}
-        name = adapter_config[POOL_NAME]
-
-        device_info = DeviceInfo(
-            identifiers=identifiers,
-            name=name,
-            manufacturer="Strebor Tech",
-            model="Pentair ScreenLogic"
-            ##via_device=(SCREENLOGIC_DOMAIN, config[CONFIG_SCREENLOGIC_ID]),
-        )
-
-        return device_info
 
 # end class ESPSensor
 

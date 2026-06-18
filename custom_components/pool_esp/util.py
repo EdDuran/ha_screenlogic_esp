@@ -32,7 +32,7 @@ def _start_debugger():
         debugpy.listen(("0.0.0.0",5678))
         _LOG.debug("__init__.Debugger listening on 5678")
     except RuntimeError:
-        _LOG.warning("FYI: Debugger is already active")
+        pass ### _LOG.debug("FYI: Debugger is already active")
 
     if not debugpy.is_client_connected():
         _LOG.warning("Waiting for debugger attach...")
@@ -48,10 +48,27 @@ def breakpoint():
     else:
         _LOG.warning("Cannot set breakpoint: Debugger is not attached")
 
+def log_exception(e:Exception, msg:str=None) -> None:
+    indent = ""
+
+    if msg is not None:
+        _LOG.error(msg)
+        indent += ".."
+
+    current_exc = e
+    while current_exc:
+        _LOG.error(f"{indent}{current_exc}")
+        current_exc = current_exc.__cause__ or current_exc.__context__
+        indent +=".."
+
+
 def local_time(ts:float, hass:HomeAssistant=None) -> str:
     """
     Convert a UTC timestamp to local time and return the local date and time as strings.
     """
+    if ts is None:
+        return None
+    
     if hass:
         tz = ZoneInfo(hass.config.time_zone)
         return datetime.fromtimestamp(ts, tz=tz).strftime('%Y-%m-%d %H:%M:%S %Z')
@@ -128,7 +145,7 @@ class EntityCombo:
             self._watch = True if parts[WATCH] == "WATCH" else False
         except Exception as e:
             _LOG.error(f"parse_entity_combo: Failed to parse [{self._entity_combo}]; {e}")
-            raise ESPException("ERROR", f"parse_entity_combo: Failed to parse [{self._entity_combo}]") from e
+            raise ESPException(f"parse_entity_combo: Failed to parse [{self._entity_combo}]") from e
 
     def parse_entity_change(changes: set):
         """
@@ -159,10 +176,16 @@ class PoolAdapter(ABC):
     def __init__(self, name:str, debug_mode=False):
         self._name = name
         self._debug_mode = debug_mode
+        self._is_ready = False
+        self._adapter_config = {}
 
     @property
     def name(self):
         return self._name
+    
+    @property
+    def prefix(self) -> str:
+        return self._adapter_config[POOL_PREFIX]
 
     @property
     def watch_entities(self) -> dict:
@@ -179,6 +202,15 @@ class PoolAdapter(ABC):
     @property
     def debug_mode(self):
         return self._debug_mode
+
+    @property
+    def is_ready(self):
+        """ Is the Pool Adapter Ready? """
+        return self._is_ready
+    
+    @is_ready.setter
+    def is_ready(self, value):
+        self._is_ready = value
 
     @abstractmethod
     def _discover():
@@ -229,8 +261,8 @@ class PoolAdapter(ABC):
             raise
         
         except Exception as e:
-            _LOG.error(f"Failed to create Pool Adapter[{name}]: {e}")
-            raise ESPException(f"Failed to create Pool Adapter[{name}]") from e
+            _LOG.debug(f"Failed to create Pool Adapter[{name}]: {e}")
+            raise ESPException(f"PoolAdapter: Failed to create adapter[{name}]") from e
     
 
 ###############################################################################
@@ -299,6 +331,8 @@ class ESP:
         self._seconds = seconds
         self._confidence = confidence
         self._status = status
+        self._rate = None
+        self._degrees_remaining = None
         self._days = 0
         self._hours = 0
         self._minutes = 0
@@ -398,11 +432,16 @@ class ESPException(Exception):
     Exception raised by ESP services.
     status  — user-facing display string for the HA helper entity
     """
-    def __init__(self, status: str, detail:str = None):
-        Exception.__init__(self, detail or status)   # explicit parent call
-        self.status = status
-        self.detail = detail
+    def __init__(self, status: str):
+        Exception.__init__(self, status)   # explicit parent call
+        self._status = status
 
+    def __str__(self) -> str:
+        return f"ESPException({self._status})"
+    
+    @property
+    def status(self) -> str:
+        return self._status
 
 ###############################################################################
 ###

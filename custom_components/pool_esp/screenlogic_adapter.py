@@ -2,16 +2,26 @@
 ### ----- Class ScreenlogicAdapter ------------------------------------------------
 ###
 import logging
+from custom_components.pool_esp.const import POOL_DOMAIN
 from dataclasses_json import config
 import homeassistant
 
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceEntry
+
+
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 
 from .const import *
 from .util import ESPException, EntityCombo, PoolAdapter
 
 _LOG = logging.getLogger(__name__)
+
+SL_DOMAIN = "screenlogic"
+SL_TECHNOLOGY = "ScreenLogic"
+SL_CONTROLLER_STATE_READY = "ready"
+SL_CONTROLLER_STATE_SYNC = "sync"
+SL_CONTROLLER_STATE_SERVICE = "service"
 
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"
@@ -28,18 +38,23 @@ BODY_CONFIG_TEMPLATES = {
     CIRCUIT         : "str:switch.{prefix}_{body_type}:WATCH"
 }
 
+TEST_ENTITY_TEMPLATE = "str:sensor.{prefix}_controller_state:IGNORE"
+
 class ScreenlogicAdapter(PoolAdapter):
 
     ### ----- init
     def __init__(self, hass:homeassistant):
-        self._hass = hass
-        self._name = "Screenlogic"
-        self._body_types = [ BODY_TYPE_POOL, BODY_TYPE_SPA ]
-        self._adapter_config = {}
-        self._body_config = {} # Map of BodyTypes to Map<KEYWORD> -> EntityCombo
-        self._watch_entities = {} # Map of BodyTypes to List[EntityId]
+
+        super().__init__(self)
+
+        self._hass:homeassistant = hass
+        self._name:str = "Screenlogic"
+        self._body_types:list = [ BODY_TYPE_POOL, BODY_TYPE_SPA ]
+        self._body_config:dict = {} # Map of BodyTypes to Map<KEYWORD> -> EntityCombo
+        self._watch_entities:dict = {} # Map of BodyTypes to List[EntityId]
 
         self._discover()
+        self.is_ready = self._test_device()
     
     def __str__(self):
         return f"ScreenLogicAdapter: name[{self._name}] body_types[{self._body_types}] adapter_config[{self._adapter_config}] body_config[{self._body_config}] watch_entities[{self._watch_entities}]"   
@@ -48,7 +63,7 @@ class ScreenlogicAdapter(PoolAdapter):
     @property
     def name(self):
         return self._name
-
+    
     @property
     def config(self):
         return self._adapter_config
@@ -84,66 +99,85 @@ class ScreenlogicAdapter(PoolAdapter):
         Returns a Map of BodyTypes -> a Map of EntityTypes -> Entity Ids
         """
 
+        ###
+        ### Get the (first) Screenlogic Integration ConfigEntry
+        ###
+        entries = self._hass.config_entries.async_entries(SL_DOMAIN)
+
+        if not entries:
+            # Screenlogic Integration is not installed
+            raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] is not installed")
+
+        if len(entries) != 1:
+            raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] contains [{len(entries)}] entries; Pool ESP supports only one")
+
+        entry:ConfigEntry = entries[0]
+    
+        # Screenlogic is not Loaded
+        if entry.state != ConfigEntryState.LOADED:
+            reason = entry.reason if entry.reason is not None else "Unknown"
+            raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] is not Loaded; State[{entry.state.value}] Reason[{reason}]")
+        
+        prefix = entry.title.lower().replace(":", "").replace("-", "_").replace(" ", "_").replace("__", "_")
+        unique_id = entry.unique_id
+        _LOG.info(f"Integration [{SL_DOMAIN}] unique_id is [{entry.unique_id}]")
+
+        ###
+        ### Get the (first) Screenlogic Integration Device
+        ###
+
         dev_reg = dr.async_get(self._hass)
 
-        sl_device = None
-        for device in dev_reg.devices.values():
-            if not sl_device:
-                # Match on manufacturer since identifiers is empty
-                manufacturer = device.manufacturer
-                config_entries = device.config_entries
+        devices = dr.async_entries_for_config_entry(dev_reg, entry.entry_id)
 
-                if manufacturer and manufacturer.lower() == "pentair":
-                    # Look up the config entries to find the integration domain
-                    for entry_id in device.config_entries:
-                        entry = self._hass.config_entries.async_get_entry(entry_id)
-                        if entry:
-                            domain = entry.domain
-                            if (domain and domain.lower() == "screenlogic"):
-                                sl_device = device
-                                break
-                        # end if entry
-                    # end for entry_id
-                # end if "pentair"
-            else:
-                break
-        # end for device
+        if not devices:
+            # Screenlogic Integration is not installed
+            raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] is not installed")
 
-        if sl_device is None:
-            _LOG.warning(f"No ScreenLogic Device found; ensure the ScreenLogic integration is set up and configured properly")
-            raise ESPException("No ScreenLogic device found")
-        
-        connections = sl_device.connections
-        if connections:
-            for e in connections:
-                key = e[0]
-                if (key == "mac"):
-                    unique_id = e[1]
-                    break
-                # endif key is 'mac'
-            # end for each connection
+        if len(devices) != 1:
+            raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] contains [{len(entries)}] devices; Pool ESP supports only one")
 
-        name = sl_device.name
-        prefix = name.lower().replace(":", "").replace("-", "_").replace(" ", "_").replace("__", "_")
-        id = sl_device.id
-        model = sl_device.model
+        device:DeviceEntry = devices[0]
+
+        ###
+        ### Build the Screenlogic Adapter Configuration
+        ###
 
         self._adapter_config = { }
 
-        self._adapter_config[POOL_NAME] = name
-        self._adapter_config[POOL_MODEL] = model
+        self._adapter_config[POOL_NAME] = device.name
+        self._adapter_config[POOL_MANUFACTURER] = device.manufacturer
+        self._adapter_config[POOL_MODEL] = device.model
         self._adapter_config[POOL_PREFIX] = prefix
-        self._adapter_config[POOL_ID] = id
         self._adapter_config[POOL_UNIQUE_ID] = unique_id
+        self._adapter_config[POOL_DOMAIN] = SL_DOMAIN
+        self._adapter_config[POOL_TECHNOLOGY] = SL_TECHNOLOGY
 
-        ## Add Body Configurations and Watch Entities
+        ###
+        ### Add Body Configurations and Watch Entities
+        ###
         for body_type in self._body_types:
             self._body_config[body_type] = self._get_config_by_body_type(body_type)
             self._watch_entities[body_type] = self._get_watch_entities_by_body_type(body_type)
         
-        _LOG.info(f"Found ScreenLogic Device: {prefix}")
+        _LOG.debug(f"Integration [{SL_DOMAIN}] discovered Device [{device.name}]")
 
-        return self._adapter_config
+    def _test_device(self) -> bool:        
+        ###
+        ### Get data from the Screenlogic Device
+        ###
+        entity_combo = EntityCombo(TEST_ENTITY_TEMPLATE.format(prefix=self._adapter_config[POOL_PREFIX]))
+        _LOG.debug(f"Testing Entity [{entity_combo.id}]")
+
+        test = self._hass.states.get(entity_combo.id)
+        if test is not None:
+            value = test.state
+            _LOG.debug(f"...Value[{value}]")
+
+            if value is not None and value != SL_CONTROLLER_STATE_READY:
+                raise ESPException(f"ScreenlogicAdapter: Integration [{SL_DOMAIN}] Controller is not Ready; value[{value}]")
+        
+        return True
     
 
 
@@ -162,7 +196,7 @@ class ScreenlogicAdapter(PoolAdapter):
 
     def _get_watch_entities_by_body_type(self, body_type: str) -> set[str]:
         """
-        Build map of body_type -> List of ScreenLogic Entities to watch
+        Build map of body_type -> List of ScreenLogic EntityId's to watch
         """
 
         watch_entities = set()
@@ -176,7 +210,7 @@ class ScreenlogicAdapter(PoolAdapter):
             # end for each body_config.item
         else:
             _LOG.error(f"_get_watch_entities: Failed, config is None")
-            raise ESPException("ERROR", "Failed to get watch entities")
+            raise ESPException("Failed to get watch entities")
 
         return watch_entities
 

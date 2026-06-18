@@ -137,7 +137,7 @@ class StateMachine:
                                 _LOG.error(f"StateMachine: Failed to execute Brick[{brick}] for State [{current_state}]; {e}")
                         else:
                             _LOG.error(f"StateMachine: [{body_type}] State[{current_state}] No Brick found. Transitions: {current_transitions}")
-                            raise ESPException("ERROR", "StateMachine: [{body_type}] State[{current_state}] No Brick found. Transitions: {current_transitions}")
+                            raise ESPException("StateMachine: [{body_type}] State[{current_state}] No Brick found. Transitions: {current_transitions}")
                         
                         # Look up the Result in the Current State Transisition table
                         #   If that fails, lookup Wildcard in the table
@@ -145,13 +145,12 @@ class StateMachine:
                         if next_state is None:
                             next_state = current_transitions.get(SM_RESULT_WILDCARD)
                             if next_state is None:
-                                raise ESPException("ERROR", f"StateMachine: Failed to find TransitionState: State[{current_transitions}] Result[{result}]")
+                                raise ESPException(f"StateMachine: Failed to find TransitionState; State[{current_transitions}] Result[{result}]")
                         
                         _LOG.debug(f"...State[{current_state}] : Brick[{brick.name}] --> Result[{result}] --> NextState[{next_state}]")
                     
                     except Exception as e:
-                        _LOG.error(f"StateMachine: Failed to execute State [{current_state}]; {e}")
-                        raise ESPException("ERROR", f"StateMachine: Failed to execute State [{current_state}]") from e
+                        raise ESPException(f"StateMachine: Failed to execute State[{current_state}]") from e
 
                     current_state = next_state
 
@@ -163,7 +162,7 @@ class StateMachine:
                         self._context.machine_state = current_state
                 else:
                     _LOG.error(f"State Machine: [{body_type}] No Transitions found for State:{current_state}")
-                    raise ESPException("ERROR", f"State Machine: [{body_type}] No Transitions found for State:{current_state}")
+                    raise ESPException(f"State Machine: [{body_type}] No Transitions found for State:{current_state}")
             
             # End While Executing State Machine
 
@@ -171,11 +170,10 @@ class StateMachine:
 
             if iteration >= max_iterations:
                 _LOG.error(f"StateMachine: [{body_type}] Infinte Loop Detected; aborting State Machine")
-                raise ESPException("ERROR", "State Machine: Infinite loop detected")
+                raise ESPException("State Machine: Infinite loop detected")
 
             return 
 
         except Exception as e:
-            _LOG.error(f"StateMachine: Failed to execute State[{current_state}]: {e}")
-            raise ESPException("ERROR", f"StateMachine: Failed to execute State[{current_state}]") from e
+            raise ESPException(f"StateMachine: Failed to execute State[{current_state}]") from e
 

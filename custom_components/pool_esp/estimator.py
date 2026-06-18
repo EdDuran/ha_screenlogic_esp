@@ -190,10 +190,10 @@ class ESPEstimator:
         except Exception as e:
             _LOG.error(f"calculate: Failed to retrieve History; {e}")
             _LOG.error(traceback.format_exc())
-            raise ESPException("ERROR", "calculate: Failed to retrieve History") from e
+            raise ESPException("calculate: Failed to retrieve History") from e
 
         if not water_history or not air_history or not heat_history:
-            _LOG.warning(f"...No Data: Air[{len(air_history)}] Water[{len(water_history)}] HeatStatus[{len(heat_history)}]")
+            _LOG.warning(f"...RETURN No Data: Air[{len(air_history)}] Water[{len(water_history)}] HeatStatus[{len(heat_history)}]")
             return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
 
         water_temps = self._parse_state_values(water_history, WATER_TEMP, body_config)
@@ -201,7 +201,10 @@ class ESPEstimator:
 
         MIN_RATE_DEG_PER_HOUR = 0.5  # must be rising at least 0.1°F/hour to count
 
-        # --- Build rate table ------------------------------------------------
+        ###
+        ### ----- Build rate table --------------------------------------------
+        ###
+
         try:
             result = await instance.async_add_executor_job(
                 self._build_rate_table,
@@ -224,25 +227,25 @@ class ESPEstimator:
             )
 
             if not table:
-                detail = f"calculate: [{self._body_type}] No usable heating intervals yet — need more history"
-                _LOG.debug(f"calculate: [{self._body_type}] {detail}")
-                return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
+                _LOG.debug(f"[{self._body_type}] Recorder has No usable heating intervals")
 
             ###
-            ### Merge new rate table with persisted historical data, and save back to disk
+            ### ----- Merge new rate table with persisted historical data -----
+            ###       and save back to disk
             ###
             used  = result["used"]
-            pool_type = self._coordinator.pool_adapter.name
-            persistence:Persistence = self._coordinator.get_persistence(self._body_type)
+            persistence:Persistence = self._coordinator.get_persistence()
             if export: ## export means running live data, so merge results
-                await persistence.merge_and_save(table, heating_intervals, used, cost_per_hour)
+                await persistence.merge_and_save(self._body_type, table, heating_intervals, used, cost_per_hour)
 
-            ### After merging, reload the full rate
-            table = persistence.get_rate_table()
+            ###
+            ###  After merging, reload the full rate
+            ###
+            table = persistence.get_rate_table(self._body_type)
 
         except Exception as e:
             _LOG.error(traceback.format_exc())
-            raise ESPException("ERROR", "calculate: Failed to build rate table") from e
+            raise ESPException("calculate: Failed to build rate table") from e
         
         # --- Log rate table --------------------------------------------------
         for bin_key in sorted(table.keys()):
@@ -266,7 +269,7 @@ class ESPEstimator:
                 heater_status  = history_adapter.get_current_value(body_config, CLIMATE_STATUS)
                 if (current_water is None or current_air is None or current_target is None or heater_status is None):
                     _LOG.error(f"calculate: [{self._body_type}] Failed to get all current sensor values")
-                    raise ESPException("ERROR", f"Failed to get [{self._body_type}] current sensor values")
+                    raise ESPException(f"Failed to get [{self._body_type}] current sensor values")
                 
                 heater_is_on   = heater_status.lower() == HEATER_STATUS_HEATING_VALUE.lower()
             else:
@@ -274,7 +277,7 @@ class ESPEstimator:
         except (ValueError, TypeError) as e:
             detail = f"calculate: {self._body_type} cannot read current sensors; {e}"
             _LOG.error(f"calculate: {self._body_type} {detail}")
-            raise ESPException("ERROR", detail)
+            raise ESPException(detail) from e
 
         _LOG.debug(
             f"...calculate: [{self._body_type}] "
@@ -289,7 +292,7 @@ class ESPEstimator:
                 self._weighted_rate, table, target_bin, AIR_TEMP_BIN_WIDTH,
             )
         except Exception:
-            raise ESPException("ERROR", "Failed to calculate weighted rate and confidence")
+            raise ESPException("Failed to calculate weighted rate and confidence")
 
         if rate is None:
             _LOG.warning(f"calculate: [{self._body_type}] rate is None")
@@ -298,6 +301,10 @@ class ESPEstimator:
         # --- ESP calculation -------------------------------------------------
         UNCERTAINTY_GAIN  = 0.5
         degrees_remaining = current_target - current_water
+        if degrees_remaining <= 0:
+            _LOG.debug(f"calculate: Water is already at or above target")
+            return ESP(0, 0, STATUS_READY) # Water is already at or above target
+        
         if degrees_remaining == 0 and heater_is_on:
             degrees_remaining = 1
 
@@ -328,7 +335,7 @@ class ESPEstimator:
         execution_endtime = time.time()
         execution_duration = execution_endtime - execution_starttime
 
-        _LOG.debug(f"...ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f}]")
+        _LOG.debug(f"...calculate: ESP using weighted model: rate[{rate:.2f} min/deg] confidence[{confidence:.2f}]")
         _LOG.debug(f"...calculate: [{self._body_type}] Complete: {msg}")
         _LOG.debug(f"...calculate: [{self._body_type}] ESP Calculation took [{execution_duration:.1f}s]")
 
@@ -550,27 +557,27 @@ class ESPEstimator:
                 _LOG.debug(f"...Skipping short interval: {duration_min:.1f} min")
                 continue
 
-            w_start = interpolate(water_temps, start_ts)
-            w_end   = interpolate(water_temps, end_ts)
-            if w_start is None or w_end is None:
+            water_at_start = interpolate(water_temps, start_ts)
+            water_at_end   = interpolate(water_temps, end_ts)
+            if water_at_start is None or water_at_end is None:
                 skipped_no_water += 1
-                _LOG.debug(f"...Skipping interval with no water data at start or end: {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping Interval[{local_time(start_ts)} / {local_time(end_ts)}] No Water data at Start{water_at_start}] or End[{water_at_end}]: {duration_min:.1f} min")
                 continue
 
-            degrees_gained = w_end - w_start
+            degrees_gained = water_at_end - water_at_start
             if degrees_gained < min_degrees_gained:
                 skipped_no_rise += 1
-                _LOG.debug(f"...Skipping WaterTemp no-rise interval[{w_start} to {w_end}] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping [{local_time(start_ts)} / {local_time(end_ts)}] WaterTemp No Rise [{water_at_start} to {water_at_end}] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
             rate_per_hour = degrees_gained / (duration_min / 60.0)
             if rate_per_hour < min_rate_deg_per_hour:
                 skipped_slow += 1
-                _LOG.debug(f"...Skipping slow interval: RatePerHour[{rate_per_hour:.2f}°/hr] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
+                _LOG.debug(f"...Skipping [{local_time(start_ts)} / {local_time(end_ts)}] Slow interval: RatePerHour[{rate_per_hour:.2f}°/hr] gained[({degrees_gained:.2f}°]) in {duration_min:.1f} min")
                 continue
 
-            start_degree = int(w_start) + 1
-            end_degree   = int(w_end)
+            start_degree = int(water_at_start) + 1
+            end_degree   = int(water_at_end)
 
             if start_degree > end_degree:
                 mid_ts  = (start_ts + end_ts) / 2.0
@@ -581,12 +588,12 @@ class ESPEstimator:
                     _LOG.debug(f"...Interval: {duration_min:.1f} min, {degrees_gained:.2f}° gained, air={avg_air:.1f}F")
                 continue
 
-            degree_timestamps = [(w_start, start_ts)]
+            degree_timestamps = [(water_at_start, start_ts)]
             for deg in range(start_degree, end_degree + 1):
                 ts = interpolate_ts_for_temp(water_temps, float(deg), start_ts, end_ts)
                 if ts is not None:
                     degree_timestamps.append((float(deg), ts))
-            degree_timestamps.append((w_end, end_ts))
+            degree_timestamps.append((water_at_end, end_ts))
 
             for i in range(1, len(degree_timestamps)):
                 chunk_start_temp, chunk_start_ts = degree_timestamps[i - 1]
@@ -674,7 +681,7 @@ class ESPEstimator:
 
         for bin_key, samples in table.items():
             if not samples:
-                _LOG.debug(f"...[{bin_key}] not any samples")
+                _LOG.debug(f"...[{bin_key:3d}] not any samples")
                 continue
 
             clean = self._trim_samples(samples)
@@ -688,39 +695,39 @@ class ESPEstimator:
             if len(clean) == 1:
                 med    = clean[0]
                 weight = SINGLE_SAMPLE_SCORE * distance_weight
-                _LOG.debug(f"...[{bin_key:03d}F] single sample med={med:.2f} weight={weight:.2f} (low confidence)"
+                _LOG.debug(f"...[{bin_key:3d}F] single sample med={med:.2f} weight={weight:.2f} (low confidence)"
                 )
                 weighted_sum += med * weight
                 total_weight += weight
                 continue
             #
             if len(clean) < 2:  # absolute minimum
-                _LOG.debug(f"...[{bin_key}] only {len(samples)} raw samples (need 2+), skipping")
+                _LOG.debug(f"...[{bin_key:3d}] only {len(samples)} raw samples (need 2+), skipping")
                 continue
 
             score = self.score_bin(clean)
             if score == 0:
-                _LOG.debug(f"...[{bin_key}] score_bin == 0, skipping")
+                _LOG.debug(f"...[{bin_key:3d}] score_bin == 0, skipping")
                 continue
 
             avg = sum(clean) / len(clean)
             sd  = (sum((x - avg) ** 2 for x in clean) / len(clean)) ** 0.5
 
             if avg > 0 and (sd / avg) > 0.5:
-                _LOG.debug(f"...[{bin_key}] high variance (sd/avg={sd/avg:.2f}), skipping")
+                _LOG.debug(f"...[{bin_key:3d}] high variance (sd/avg={sd/avg:.2f}), skipping")
                 continue
 
             med             = self._median(clean)
             weight          = score * distance_weight
 
-            _LOG.debug(f"...[{bin_key}] med={med:.2f} score={score:.2f} distance={distance:.1f} weight={weight:.2f}")
+            _LOG.debug(f"...[{bin_key:3d}] med={med:.2f} score={score:.2f} distance={distance:.1f} weight={weight:.2f}")
 
             weighted_sum += med * weight
             total_weight += weight
         # end for each table.item
 
         if total_weight == 0:
-            rate       = None
+            rate       = 0.0
             confidence = 0.0
         else:
             rate       = weighted_sum / total_weight

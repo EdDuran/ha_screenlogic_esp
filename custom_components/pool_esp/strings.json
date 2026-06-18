@@ -4,58 +4,62 @@
       "user": {
         "title": "Pool ESP — Discover Pool Adapter",
         "description": "Automatically discovering your pool system..."
-      }
-    },
-    "fuel_type": {
-      "title": "Heater Configuration",
-      "data": {
-        "heater_fuel_type": "Heater fuel type",
-        "show_panel": "Show ESP Rate Table in sidebar"
-      }
-    },
-    "gas": {
-      "title": "Gas Heater Settings",
-      "data": {
-        "gas_heater_btu":     "Heater output (BTU/hr)",
-        "gas_cost_per_therm": "Gas cost per therm ($)"
-      }
-    },
-    "electric": {
-      "title": "Electric/Heat Pump Settings",
-      "data": {
-        "electric_heater_kw":    "Heater power (kW)",
-        "electric_cost_per_kwh": "Electricity cost per kWh ($)"
+      },
+      "fuel_type": {
+        "title": "Heater Configuration",
+        "data": {
+          "heater_fuel_type": "Heater fuel type",
+          "show_panel": "Show ESP Rate Table in sidebar"
+        }
+      },
+      "gas": {
+        "title": "Gas Heater Settings",
+        "data": {
+          "gas_heater_btu":     "Heater output (BTU/hr)",
+          "gas_cost_per_therm": "Gas cost per therm ($)"
+        }
+      },
+      "electric": {
+        "title": "Electric/Heat Pump Settings",
+        "data": {
+          "electric_heater_kw":    "Heater power (kW)",
+          "electric_cost_per_kwh": "Electricity cost per kWh ($)"
+        }
       }
     },
     "abort": {
-      "no_screenlogic": "No Pool Adapter integration found. Please configure Pool Adapter first.",
+      "no_pool_adapter": "No Pool Adapter integration found. Please configure Pool Adapter first.",
       "already_configured": "ESP is already configured for your device"
-    }
-  },
-  "options": {
-    "step": {
-      "fuel_type": {
-        "title": "Pool ESP Options",
-        "data": {
-          "show_sidebar_panel": "Show ESP Rates in sidebar",
-          "heater_fuel_type": "Heater fuel type",
-          "electric_heater_kw": "Electric heater rating (kW)",
-          "electric_cost_per_kwh": "Electricity cost per kWh ($)",
-          "gas_heater_btu": "Gas heater BTU rating (BTU/hr)",
-          "gas_cost_per_therm": "Gas cost per therm ($)"
-        },
-        "description": "Enter your heater's operating cost per hour. For gas heaters divide your hourly BTU rating by 100,000 and multiply by your gas price per therm. For heat pumps multiply kW input by your electric rate."
-      }
-    }
-  },
-  "issues": {
-    "missing_pool_adapter": {
-      "title": "Pool Adapter integration not found",
-      "description": "ESP requires a Pool Adapter integration to be configured. Ensure Screenlogic is installed and configured."
     },
-    "heater_performance": {
-      "title": "Heater Performance Issue — {body_type}",
-      "description": "The {body_type} heater is not performing as expected.\n\nExpected temperature rise: **+{expected_rise}°F**\nActual temperature rise: **+{actual_rise}°F**\nCurrent water temperature: **{current_temp}°F**\n\nThis may indicate a heater startup delay, low gas pressure, or mechanical issue. Check the heater and dismiss this alert once resolved."
+    "options": {
+      "step": {
+        "fuel_type": {
+          "title": "Pool ESP Options",
+          "data": {
+            "show_sidebar_panel": "Show ESP Rates in sidebar",
+            "heater_fuel_type": "Heater fuel type",
+            "electric_heater_kw": "Electric heater rating (kW)",
+            "electric_cost_per_kwh": "Electricity cost per kWh ($)",
+            "gas_heater_btu": "Gas heater BTU rating (BTU/hr)",
+            "gas_cost_per_therm": "Gas cost per therm ($)"
+          },
+          "description": "Enter your heater's operating cost per hour. For gas heaters divide your hourly BTU rating by 100,000 and multiply by your gas price per therm. For heat pumps multiply kW input by your electric rate."
+        }
+      }
+    },
+    "issues": {
+      "no_pool_adapter": {
+        "title": "Pool Adapter integration not found",
+        "description": "ESP requires a Pool Adapter integration to be configured. Ensure Screenlogic is installed and configured."
+      },
+      "heater_performance": {
+        "title": "Heater Performance Issue — {body_type}",
+        "description": "The {body_type} heater is not performing as expected.\n\nExpected temperature rise: **+{expected_rise}°F**\nActual temperature rise: **+{actual_rise}°F**\nCurrent water temperature: **{current_temp}°F**\n\nThis may indicate a heater startup delay, low gas pressure, or mechanical issue. Check the heater and dismiss this alert once resolved."
+      },
+      "pool_adapter_value": {
+        "title": "Pool Adapter value error",
+        "description": "The [{pool_adapter}] Adapter failed to return the expected value"
+      }
     }
   }
 }

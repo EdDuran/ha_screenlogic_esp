@@ -1,7 +1,8 @@
 from __future__ import annotations
 import traceback
+from custom_components.pool_esp.coordinator import ESPCoordinator
 from custom_components.pool_esp.test_runner import run_scenario
-from custom_components.pool_esp.util import PoolAdapter, start_debugger
+from custom_components.pool_esp.util import PoolAdapter, log_exception, start_debugger
 from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, HomeAssistantError
 from homeassistant.components.homeassistant import IssueSeverity
 from homeassistant.helpers.device_registry import DeviceEntry
@@ -29,6 +30,12 @@ import shutil
 
 _LOG = logging.getLogger(__name__)
 
+###############################################################################
+###
+### ----- Class ESPRatesView --------------------------------------------------
+###
+###############################################################################
+
 class ESPRatesView(HomeAssistantView):
     """
     View to get/set ESP rates data. This is used by the panel to persist rates data,
@@ -40,19 +47,19 @@ class ESPRatesView(HomeAssistantView):
 
     async def get(self, request):
         hass = request.app["hass"]
-        coordinator = self._get_coordinator(hass)
+        coordinator:ESPCoordinator = self._get_coordinator(hass)
 
         result = {
             "pool_type": coordinator._pool_adapter.name,
             "bodies":    {}
         }
 
+        p = coordinator.get_persistence()
+
         for body_type in BODY_TYPES:
-            p = coordinator.get_persistence(body_type)
+            body_data = p.body_data(body_type)
             result["bodies"][body_type] = {
-                **p.body_data,                              # rate_table, highwater_ts, etc.
-                "total_runtime_minutes": p.total_runtime_minutes,
-                "total_cost":            round(p.total_cost, 2),
+                **body_data                            # rate_table, highwater_ts, etc.
             }            
         
         return self.json(result)
@@ -61,14 +68,15 @@ class ESPRatesView(HomeAssistantView):
         hass = request.app["hass"]
         data = await request.json()
         bodies = data.get("bodies", {})
-        coordinator = self._get_coordinator(hass)
+        coordinator:ESPCoordinator = self._get_coordinator(hass)
+
+        p = coordinator.get_persistence()
+        await p.async_load()
 
         for body_type, body_data in bodies.items():
-            p = coordinator.get_persistence(body_type)
-            await p.async_load()
-            p._data["pool_type"] = data.get("pool_type", "Unknown") # Ensure pool_type is saved at top level for easy access
-            p._data[body_type] = body_data
-            await p.async_save()
+            p.data[body_type] = body_data
+
+        await p.async_save()
             
         return self.json({"status": "ok"})
     
@@ -129,6 +137,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 ###
 async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> bool:
 
+    from .coordinator import ESPCoordinator
 
     ### ----- Run Service Test
     async def handle_run_test(call:ServiceCall):
@@ -149,6 +158,9 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
 
     _LOG.debug(f"__init__.async_setup_entry")
 
+    ###
+    ### Start the Debugger
+    ###
     await start_debugger(hass)
 
     # Register reload handler
@@ -172,7 +184,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     try:
         pool_adapter:PoolAdapter = await PoolAdapter.create(hass, adapter_name)
     except Exception as e:
-        _LOG.error(f"Failed to initialize Pool ESP integration: {e}")
+        log_exception(e, f"Pool ESP: Failed to complete [config_flow.async_setup_entry]")
 
         ir.async_create_issue(
             hass,
@@ -189,7 +201,6 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ###
     ### Create ESP Coordinator with the Pool Adapter's Configuration
     ###
-    from .coordinator import ESPCoordinator
     coordinator = ESPCoordinator(hass, config_entry, pool_adapter)
     await coordinator.async_setup()  # your custom init
     await coordinator.async_config_entry_first_refresh()
@@ -222,10 +233,14 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ### Register the ESP rates view
     ###
     hass.http.register_view(ESPRatesView())
+    _LOG.debug(f"...Register ESPRateView web API")
 
-    _LOG.debug(f"..async_setup_entry: Done")
 
     return True
+
+###
+### ---------------------------------------------------------------------------
+###
 
 async def _async_copy_www_assets(hass:HomeAssistant):
     """Copy www files to /config/www/pool_esp on every startup."""

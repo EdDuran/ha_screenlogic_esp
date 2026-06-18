@@ -2,13 +2,23 @@ from abc import ABC
 
 from custom_components.pool_esp.util import start_debugger
 
-from .const import DOMAIN, CONF_ELECTRIC_COST_PER_KWH, CONF_ELECTRIC_HEATER_KW, CONF_GAS_COST_PER_THERM, CONF_GAS_HEATER_BTU, CONF_HEATER_FUEL_TYPE, CONF_SHOW_PANEL, DEFAULT_POOL_ADAPTER, POOL_ADAPTER_CONFIG, POOL_ID, POOL_UNIQUE_ID
-from .util import PoolAdapter
+from .const import (
+    DOMAIN,
+    CONF_ELECTRIC_COST_PER_KWH,
+    CONF_ELECTRIC_HEATER_KW,
+    CONF_GAS_COST_PER_THERM,
+    CONF_GAS_HEATER_BTU,
+    CONF_HEATER_FUEL_TYPE,
+    CONF_SHOW_PANEL,
+    DEFAULT_POOL_ADAPTER,
+    POOL_ADAPTER_CONFIG,
+    POOL_UNIQUE_ID
+)
+from .util import ESPException, PoolAdapter, log_exception
 import voluptuous as vol
 import logging
 
-from dataclasses_json import config
-from homeassistant.config_entries import ConfigEntryNotReady, ConfigFlow, OptionsFlow
+from homeassistant.config_entries import ConfigFlow, OptionsFlow
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.core import callback
 
@@ -166,6 +176,8 @@ class ESPConfigFlow(ESPFlowMixin, ConfigFlow, domain=DOMAIN):
         
         _LOG.debug(f"async_setup_user user_input[{user_input}]")
 
+        await start_debugger(self.hass)
+
         yaml_config = self.hass.data.get(DOMAIN, {}).get("yaml_config")
         
         #if yaml_config is not None:
@@ -175,7 +187,8 @@ class ESPConfigFlow(ESPFlowMixin, ConfigFlow, domain=DOMAIN):
 
         try:
             await self._discover_pool_adapter(adapter_name)
-        except ConfigEntryNotReady:
+        except ESPException as e:
+            log_exception(e, f"Pool ESP: Failed to complete [config_flow.async_step_user]")
             return self.async_abort(reason="no_pool_adapter")
         
         return await self.async_step_fuel_type()  # ← start shared options flow immediately after discovery
@@ -203,10 +216,7 @@ class ESPConfigFlow(ESPFlowMixin, ConfigFlow, domain=DOMAIN):
         ## Create PoolAdapter and Discover it's Configuration
         try:
             pool_adapter:PoolAdapter = await PoolAdapter.create(self.hass, adapter_name)
-            _LOG.debug(f"Discovered Pool Adapter [{adapter_name}] config: {pool_adapter}")
         except Exception as e:
-            _LOG.error(f"Failed to discover Pool Adapter; {e}")
-
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
@@ -215,9 +225,9 @@ class ESPConfigFlow(ESPFlowMixin, ConfigFlow, domain=DOMAIN):
                 severity=ir.IssueSeverity.ERROR,
                 translation_key="missing_pool_adapter",
             )
-            # Don't fail setup entirely — just raise ConfigEntryNotReady
+            # Don't fail setup entirely — raise exception
             # HA will retry setup automatically
-            raise ConfigEntryNotReady(f"Failed to configure Pool ESP integration") from e
+            raise ESPException(f"Failed to create Pool ESP integration") from e
     
 
         if pool_adapter is None:
@@ -238,11 +248,11 @@ class ESPConfigFlow(ESPFlowMixin, ConfigFlow, domain=DOMAIN):
             # Abort the flow if a config entry with the same unique ID exists
             self._abort_if_unique_id_configured()
 
-            self._device_id = pool_adapter.config.get(POOL_ID)
+            self._device_id = self._unique_id
             self._device_name = f"{pool_adapter.name} ESP"
 
         else:
-            raise ConfigEntryNotReady(f"Pool Adapter [{adapter_name}] did not provide a unique ID")
+            raise ESPException(f"Pool Adapter [{adapter_name}] did not provide a unique ID")
         
 
 
