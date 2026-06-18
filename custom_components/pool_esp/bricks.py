@@ -469,7 +469,7 @@ class HeatingCallback(TimerCallback):
             context.status = esp.status
             context.seconds = esp.seconds
             context.confidence_pct = esp.confidence_pct
-            context.coordinator.update_sensor(context.body_type)
+            context.coordinator.update_sensor(context.body_type, "esp")
 
             _LOG.debug(f"HeatingCallback.on_timer_interval: [{timer.name}], remaining[{context.seconds}/{context.status}] confidence[{context.confidence_pct}]")
 

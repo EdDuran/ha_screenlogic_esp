@@ -645,7 +645,7 @@ class Context():
 
 
     @property
-    def coordinator(self) -> dict:
+    def coordinator(self):
         return self._context.get(CONTEXT_COORDINATOR)
 
     @coordinator.setter
