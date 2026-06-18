@@ -78,15 +78,16 @@ class ESPCoordinator(DataUpdateCoordinator):
             _LOG.error(f"Failed to update Sensor[{name}]; sensor not found")
         
     
-    def get_sensor(self, body_type:str, sensor_type):
+    def get_sensor(self, body_type:str, sensor_class):
         """
         Get the specified sensor for the specified body type
         """
-        for sensor in self._sensors.get(body_type, set()):
-            if isinstance(sensor, sensor_type) and sensor._body_type == body_type:
+        sensors =  self._sensors.get(body_type, dict())
+        for name, sensor in sensors.items():
+            if isinstance(sensor, sensor_class):
                 return sensor
         
-        raise ESPException(f"Sensor[{body_type}][{sensor_type}] was not found in Coordinator sensors: {self._sensors.get(body_type, set())}")
+        raise ESPException(f"Sensor[{body_type}][{sensor_class}] was not found in Coordinator sensors: {sensors}")
     
     def get_sensors(self) -> set:
         """

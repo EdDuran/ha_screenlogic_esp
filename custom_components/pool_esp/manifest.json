@@ -1,7 +1,7 @@
 {
   "domain": "pool_esp",
   "name": "Pool ESP",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "documentation": "https://github.com/EdDuran/ha_screenlogic_esp",
   "issue_tracker": "https://github.com/EdDuran/ha_screenlogic_esp/issues",
   "dependencies": ["screenlogic"],
