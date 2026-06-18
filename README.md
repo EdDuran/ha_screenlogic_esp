@@ -27,7 +27,7 @@ Pool ESP can also estimate your cost of heating based on the heater type (gas, e
 * MM:SS .. Minutes and Seconds during Water Sensing
 * Once sufficient heating characteristics are determined, Pool ESP can provide estimates when the heater is off as well ...
 
-> **_How long would it take if I turned on the Spa?_**
+> **_How long <ins>would</ins> it take if I turned on the Spa now?_**
 
 ## Prerequisites
 Pool ESP currently relies on data provided by the *Pentair Screenlogic Integration*. If you do not have a Pentair Screenlogic automation and the Screenlogic Integration installed .. Pool ESP will not work. 
@@ -60,11 +60,15 @@ You can adjust how long the HA Recorder maintains historical data by adding to y
 ```
 
 ## How ESP learning works
-Pool ESP relies on the Home Assistant Recorder to gather data. If you've recently heated your Pool (or Spa), ESP can instantly produce estimates. If there is no useful data yet, ESP is "Learning". When sufficient heating data is available ESP will calculate how long it'll take to reach your desired Set Point. ESP provides a Confidence percentage (determined by the quality and quantity of data available). The Confidence could start low (10%) and gradually increase over time as more quality data becomes available.
+Pool ESP relies on the Home Assistant Recorder to gather data. If you've recently heated your Pool (or Spa), ESP can instantly produce estimates. If there is no useful data yet, ESP is "Learning". When sufficient heating data is available ESP will calculate how long it'll take to reach your desired Set Point.
 
-Pool ESP looks at how long it takes the Pool or Spa to increase in temperature and determines a rate. It does this in 5 degree Air Temperature bins. Cooler air temperatures could result in longer rates than wamer air temperatures. This will be evident in the ESP Rate Viewer.
+How much is "sufficient"?
 
-It's interesting to note, the larger Pool volume is more affected by Air Temperature than a small Spa. This actually makes sense.
+Just a single heating session is all it takes. ESP provides a Confidence percentage (determined by the quality and quantity of data available). The Confidence could start low (6% with only that single data point) and gradually increase over time as more quality data becomes available.
+
+Pool ESP looks at how long it takes the Pool or Spa to increase in temperature and determines a rate. It does this in 5 degree Air Temperature bins. Cooler air temperatures could result in longer rates than wamer air temperatures. This will be evident in the [ESP Rate Viewer](#esp-rate-viewer).
+
+It's interesting to note: the larger Pool volume is more affected by Air Temperature than a small Spa. This actually makes sense as there is more surface area.
 
 ## Watchdog
 Once Pool ESP understands the heating characteristics it can alert if the heating time exceeds expectations. This FYI notification could be a natural event, such a very cold day, or indicate there is a heater malfunction which needs investigation.
@@ -81,15 +85,37 @@ Pool ESP sensor entities provide the State of Operation:
 | standby     | At Set Point, heating paused | Ready |
 | maintaining | At Set Point, heating the Water to maintain temperature | Ready |
 
+## State Machine
+
+If you *really* want to know how it works ...
+
+```mermaid
+graph TD;
+    off-->sensing;
+    sensing-->heating;
+    sensing-->off;
+    heating-->ready;
+    heating-->off;
+    ready-->standby;
+    ready-->off;
+    ready-->heating;
+    standby-->maintaining;
+    standby-->off;
+    standby-->heating;
+    maintaining-->standby;
+    maintaining-->off;
+    maintaining-->heating;
+```
+
 **NOTE:**
-* State **ready** will only occur once. Great for an Automation to alert: "The Spa is ready"
-** Increasing the water temperature after reaching ready will go back to heating.
-* States **standby** and **maintaining** alternate as the Heater turns on and off to keep the water at temperature
+* State **ready** occurs only once. Perfect for an Automation to alert: "The Spa is ready".
+* Increasing the water temperature <ins>after</ins> reaching Ready returns to heating, and will result in another Ready.
+* States **standby** and **maintaining** alternate as the Heater turns on and off to keep the water at temperature.
 
 ## Sample Dashboard
 In this example, the Spa Circuit is off, Heater enabled but not heating. Water is 98°, set to 99°. The ESP State is off (because the Circuit is off) and estimating that if it were turned on, it would take about 5 minutes to heat up.
 
-<img width="300" height="500" alt="ESP Spa Dashboard" src="https://github.com/user-attachments/assets/a6e3a00e-d755-4eb4-adbc-68eb88f4b6b7" />
+<img width="644" height="626" alt="image" src="https://github.com/user-attachments/assets/261c4c4c-9284-49cc-8690-d6ef18d20235" />
 
 ## ESP Rate Viewer
 The Pool ESP settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactivly delete extraneous values.
@@ -103,12 +129,15 @@ The first time running the ESP Rate Viewer you'll need to provide your Long-live
 4. Copy and paste the value into the ESP Rate Viewer Settings field and click Connect
    - Recommend that you save this token somewhere
 
-<img width="1886" height="1018" alt="ESP Rate Viewer" src="https://github.com/user-attachments/assets/4ebb96b9-1750-41b8-833b-a70abe0a7e94" />
+<img width="949" height="633" alt="image" src="https://github.com/user-attachments/assets/06e874aa-946a-45eb-b084-ab01f22d942a" />
 
 ### Extraneous Values?
 If your heater malfunctions (ie, heat pump fails to start a few times before functioning) _Screenlogic thinks it is heating_ but the heater hasn't started properly, which can cause the rate estimate to be exaggerated. These bogus values will age out over time, or can be manually removed.
 
-Click on the Air Temperature bin to open the list of data rates. Click the checkbox on the rates you wish to delete, [Delete Selected] button, then [Save to HA]
+Click on the Air Temperature bin to open the list of data rates. Check the rates you wish to delete, Click the [Delete Selected] button, then Click [Save to HA]
 
-<img width="1912" height="1344" alt="ESP Rate Viewer Delete" src="https://github.com/user-attachments/assets/fa0dd683-66bf-4d11-b613-5f6b7bedd237" />
+Select a range of rates with shift-click
+
+<img width="806" height="401" alt="image" src="https://github.com/user-attachments/assets/d41d8fd9-b331-4f8d-b00b-b695a7ba426e" />
+
 
