@@ -445,6 +445,7 @@
     const bd      = rawData.bodies[activeBody];
     const samples = bd.rate_table[bin];
     const sorted_samples = [...samples].sort((a,b) => b[1] - a[1])
+    bd.rate_table[bin] = sorted_samples
     const now     = Date.now() / 1000;
 
     document.getElementById('detailTitle').textContent =
