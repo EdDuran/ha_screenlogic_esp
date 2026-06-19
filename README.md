@@ -89,23 +89,7 @@ Pool ESP sensor entities provide the State of Operation:
 
 If you *really* want to know how it works ...
 
-```mermaid
-graph TD;
-    off-->sensing;
-    sensing-->heating;
-    sensing-->off;
-    heating-->ready;
-    heating-->off;
-    ready-->standby;
-    ready-->off;
-    ready-->heating;
-    standby-->maintaining;
-    standby-->off;
-    standby-->heating;
-    maintaining-->standby;
-    maintaining-->off;
-    maintaining-->heating;
-```
+<img width="446" height="628" alt="image" src="https://github.com/user-attachments/assets/443f539c-5ac7-4292-a5eb-62ccb0686c66" />
 
 **NOTE:**
 * State **ready** occurs only once. Perfect for an Automation to alert: "The Spa is ready".
