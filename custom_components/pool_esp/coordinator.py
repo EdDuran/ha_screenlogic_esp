@@ -302,6 +302,7 @@ class ESPCoordinator(DataUpdateCoordinator):
             ### Update the prior target temperature for the next go around
             ###
             await StateMachine(STATE_TRANSITIONS,context, cause).execute()
+
             context.prior_target_temp = context.target_temp 
 
             esp = context.esp

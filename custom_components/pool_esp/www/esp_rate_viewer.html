@@ -444,14 +444,12 @@
     activeBin     = bin;
     const bd      = rawData.bodies[activeBody];
     const samples = bd.rate_table[bin];
-    const sorted_samples = [...samples].sort((a,b) => b[1] - a[1])
-    bd.rate_table[bin] = sorted_samples
     const now     = Date.now() / 1000;
 
     document.getElementById('detailTitle').textContent =
-      `Air Temp ${bin}°F — ${+bin + BIN_WIDTH}°F  ·  ${sorted_samples.length} samples`;
+      `Air Temp ${bin}°F — ${+bin + BIN_WIDTH}°F  ·  ${samples.length} samples`;
  
-    document.getElementById('detailBody').innerHTML = sorted_samples.map((s, i) => {
+    document.getElementById('detailBody').innerHTML = samples.map((s, i) => {
       const key      = `${activeBody}|${bin}|${i}`;
       const deleted  = !!deletions[key];
       const ageDays  = (now - s[1]) / 86400;

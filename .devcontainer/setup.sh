@@ -14,7 +14,7 @@ cp /workspaces/ha_screenlogic_esp/.devcontainer/config/configuration.yaml /confi
 
 # Copy rate viewer
 mkdir -p /config/www/pool_esp
-cp /workspaces/ha_screenlogic_esp/www/esp_rate_viewer.html \
+cp /workspaces/ha_screenlogic_esp/custom_components/pool_esp/www/esp_rate_viewer.html \
    /config/www/pool_esp/esp_rate_viewer.html
 
 # Restore dashboard

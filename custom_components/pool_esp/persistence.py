@@ -71,12 +71,33 @@ class Persistence:
         if (not self._loaded):
             _LOG.debug(f"async_load() Pool Samples[{self.sample_count("pool")}], Spa Samples[{self.sample_count("spa")}]")
             self._data   = await self._store.async_load() or {}
+            self._presort_rate_table()
+            ### Pre-sort rate_table 'just-in-case'
             self._loaded = True
+
+    def _presort_rate_table(self):
+        """Ensure all Rate Tables are sorted"""
+        for body_type in BODY_TYPES:
+            rate_table = self._data.get(body_type, {}).get("rate_table", {})
+            if rate_table is not None:
+                rate_table = self._sort_rate_table(rate_table)
+                self._data[body_type]["rate_table"] = rate_table
+
+    def _sort_rate_table(self, rate_table:dict) -> dict:
+        """Sort the Rate Table by timestamp in descending order"""
+
+        sorted_rate_table = {
+            temp: sorted(samples, key=lambda item: item[1], reverse=True)
+                for temp, samples in rate_table.items()
+        }
+
+        return sorted_rate_table
+
 
     async def async_save(self):
         """Save persistent data to HA storage."""
         await self._store.async_save(self._data)
-        _LOG.debug(f"async_save: Done")
+        _LOG.debug(f"Saved Persistence: HighWater pool[{local_time(self.highwater_ts("pool"))}] spa[{local_time(self.highwater_ts("spa"))}]")
 
     # -------------------------------------------------------------------------
     # Public API
@@ -179,13 +200,18 @@ class Persistence:
             ### Only advance highwater mark if we actually merged samples
             ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
             new_highwater_ts = max(end for _, end in new_closed)
+            _LOG.debug(f"...Merged [{merged}] items, Advancing highwater mark [{local_time(self.highwater_ts)} --> {local_time(new_highwater_ts)}]")
             self.set_highwater_ts(body_type, new_highwater_ts)
-            _LOG.debug(f"...Merged [{merged}] items, Advancing highwater mark to [{local_time(new_highwater_ts)}]")
         else:
             _LOG.warning(f"Persistence.merge_and_save: [{body_type}] No samples merged despite {len(new_closed)} new closed intervals — highwater mark NOT advanced")
 
+        ###
+        ### ----- Sort the Rate Table
+        ###
+        sorted_rate_table = self._sort_rate_table(rate_table)
+
         # --- Update metadata -----------------------------------------------------
-        body_data[KEY_RATE_TABLE]           = rate_table
+        body_data[KEY_RATE_TABLE]           = sorted_rate_table
         body_data[KEY_LAST_UPDATED]         = datetime.now(timezone.utc).isoformat()
         body_data[KEY_SAMPLE_COUNT]         = self.sample_count(body_type)
         body_data[KEY_LAST_MERGE_INTERVALS] = intervals_used
@@ -196,6 +222,7 @@ class Persistence:
         await self.async_save()
 
         _LOG.debug(f"Persistence.merge_and_save: [{body_type}] merged[{merged}] pruned[{pruned}] total_samples[{self.sample_count(body_type)}]")
+    
 
     def _update_heater_costs(self, body_data: dict, new_runtime_minutes: float, cost_per_hour: float):
         ### Update runtime and cost totals — these are used for diagnostics and to determine if the pool is "expensive" to heat

@@ -212,8 +212,8 @@ class HeatingBrick(Brick):
 
         result = self._get_result()
 
-        if result in (RESULT_ACTIVE, RESULT_TARGETCHANGE):         # Activly Heating?
-            if self.context.is_last_degree():    # Last Degree? (Water@Target and Heating)
+        if result in (RESULT_ACTIVE, RESULT_TARGETCHANGE):
+            if result == RESULT_ACTIVE and self.context.is_last_degree():    # Active AND Last Degree? (Water@Target and Heating)
                 # Y: Return STANDBY
                 #    The water is ready, though the heater may continue to run for a while
                 result = RESULT_STANDBY

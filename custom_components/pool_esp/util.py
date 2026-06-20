@@ -755,6 +755,9 @@ class Context():
         ### After executing: ESPCoordinator._execute_with_current_data ...
         ###   self.prior_target_temp = target_temp    # Update prior target temp for next time
 
+        if target_change:
+            _LOG.debug(f"[{self.body_type}] Target Temp Change [{prior_target_temp} --> {target_temp}]")
+
         return target_change
     
     def get_esp_result(self) -> str:
