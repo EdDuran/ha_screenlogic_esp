@@ -66,7 +66,7 @@ def local_time(ts:float, hass:HomeAssistant=None) -> str:
     """
     Convert a UTC timestamp to local time and return the local date and time as strings.
     """
-    if ts is None:
+    if ts is None or ts == 0.0:
         return None
     
     if hass:

@@ -182,14 +182,14 @@ class HeaterRuntimeSensor(ESPEntity, SensorEntity):
 
     _attr_device_class               = SensorDeviceClass.DURATION
     _attr_state_class                = SensorStateClass.TOTAL_INCREASING
-    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
     _attr_icon                       = "mdi:timer-outline"
 
     def __init__(self, coordinator:ESPCoordinator, body_type:str):
 
         super().__init__(coordinator)
 
-        self._total_minutes  = 0.0
+        self._total_hours    = 0.0
 
         self._coordinator    = coordinator
         self._body_type      = body_type
@@ -199,7 +199,7 @@ class HeaterRuntimeSensor(ESPEntity, SensorEntity):
         self._attr_name      = f"{body_type.capitalize()} Heater Runtime"
 
     def __str__(self) -> str:
-        return f"HeaterRuntimeSensor({self._attr_unique_id}) total_minutes[{self._total_minutes:.1f}]"
+        return f"HeaterRuntimeSensor({self._attr_unique_id}) total_hours[{self._total_hours:.1f}]"
 
     @property
     def native_value(self) -> float:
@@ -207,9 +207,9 @@ class HeaterRuntimeSensor(ESPEntity, SensorEntity):
 
     def add_interval_runtime(self, duration_minutes:float):
         """Called when a heating interval completes."""
-        self._total_minutes += duration_minutes
+        self._total_hours += (duration_minutes / 60)
         self.async_write_ha_state()
-        _LOG.debug(f"HeaterRuntimeSensor({self._attr_unique_id}) added [{duration_minutes:.1f} min] total[{self._total_minutes:.1f} min]")
+        _LOG.debug(f"HeaterRuntimeSensor({self._attr_unique_id}) added [{duration_minutes:.1f} min] total[{self._total_hours:.1f} hours]")
 
 # end class HeaterRuntimeSensor
 

@@ -193,7 +193,7 @@ class ESPEstimator:
             raise ESPException("calculate: Failed to retrieve History") from e
 
         if not water_history or not air_history or not heat_history:
-            _LOG.warning(f"...RETURN No Data: Air[{len(air_history)}] Water[{len(water_history)}] HeatStatus[{len(heat_history)}]")
+            _LOG.debug(f"...RETURN No Data: Air[{len(air_history)}] Water[{len(water_history)}] HeatStatus[{len(heat_history)}]")
             return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
 
         water_temps = self._parse_state_values(water_history, WATER_TEMP, body_config)
@@ -293,9 +293,11 @@ class ESPEstimator:
             )
         except Exception:
             raise ESPException("Failed to calculate weighted rate and confidence")
-
-        if rate is None:
-            _LOG.warning(f"calculate: [{self._body_type}] rate is None")
+        ###
+        ### 0 Rate & Confidence mean no data: ie, Learning
+        ###
+        if rate == 0 and confidence == 0:
+            _LOG.debug(f"calculate: [{self._body_type}] rate and confidence are zero")
             return ESP(0, 0, STATUS_LEARNING) # No ESP, No Confidence
 
         # --- ESP calculation -------------------------------------------------

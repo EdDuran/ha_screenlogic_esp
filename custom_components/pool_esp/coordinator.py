@@ -166,7 +166,7 @@ class ESPCoordinator(DataUpdateCoordinator):
 
     async def _first_estimator_calculations(self, hass) -> None:
         """Called when HA has fully started — all platforms initialized."""
-        _LOG.debug("ESPCoordinator: Platform is ready, running first calculation")
+        _LOG.debug("ESPCoordinator: Platform is ready, running initial estimation")
         for body_type in BODY_TYPES:
             context = self.get_context(body_type)
             try:
