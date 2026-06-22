@@ -415,27 +415,29 @@
 
     grid.innerHTML = keys.map(bin => {
       const samples = table[bin];
-      const rates   = samples.map(s => s[0]);
-      const avg     = rates.reduce((a,b) => a+b, 0) / rates.length;
-      const newest  = Math.max(...samples.map(s => s[1]));
-      const temp    = +bin;
-      const hue     = temp > 80 ? `var(--accent2)` : temp > 70 ? `var(--accent)` : `#7eb8ff`;
-      const allSame = rates.length > 2 && rates.every(r => Math.abs(r - rates[0]) < 0.0001);
-      const warn    = allSame ? `<div class="bin-warn">⚠ Duplicate data detected</div>` : '';
+      if (samples.length > 0) {
+        const rates   = samples.map(s => s[0]);
+        const avg     = rates.reduce((a,b) => a+b, 0) / rates.length;
+        const newest  = Math.max(...samples.map(s => s[1]));
+        const temp    = +bin;
+        const hue     = temp > 80 ? `var(--accent2)` : temp > 70 ? `var(--accent)` : `#7eb8ff`;
+        const allSame = rates.length > 2 && rates.every(r => Math.abs(r - rates[0]) < 0.0001);
+        const warn    = allSame ? `<div class="bin-warn">⚠ Duplicate data detected</div>` : '';
 
-      return `
-        <div class="bin-card ${activeBin === bin ? 'active' : ''}" onclick="openDetail('${bin}')">
-          <div class="bin-range">${bin}°F — ${temp + BIN_WIDTH}°F</div>
-          <div class="bin-rate" style="color:${hue}">${avg.toFixed(2)}</div>
-          <div class="bin-unit">min / °F avg</div>
-          <div class="bin-meta">
-            <span class="sample-count">${samples.length} sample${samples.length !== 1 ? 's' : ''}</span>
-            <span>${new Date(newest * 1000).toLocaleDateString()}</span>
-          </div>
-          ${warn}
-          <div class="heat-bar" style="background:linear-gradient(90deg,${hue},transparent)"></div>
-        </div>`;
-    }).join('');
+        return `
+          <div class="bin-card ${activeBin === bin ? 'active' : ''}" onclick="openDetail('${bin}')">
+            <div class="bin-range">${bin}°F — ${temp + BIN_WIDTH}°F</div>
+            <div class="bin-rate" style="color:${hue}">${avg.toFixed(2)}</div>
+            <div class="bin-unit">min / °F avg</div>
+            <div class="bin-meta">
+              <span class="sample-count">${samples.length} sample${samples.length !== 1 ? 's' : ''}</span>
+              <span>${new Date(newest * 1000).toLocaleDateString()}</span>
+            </div>
+            ${warn}
+            <div class="heat-bar" style="background:linear-gradient(90deg,${hue},transparent)"></div>
+          </div>`;
+    }
+  }).join('');
   }
 
   // ── Detail Panel ──────────────────────────────────────────────────────────
@@ -444,7 +446,8 @@
     activeBin     = bin;
     const bd      = rawData.bodies[activeBody];
     const samples = bd.rate_table[bin];
-    const now     = Date.now() / 1000;
+    const today    = new Date();
+    today.setHours(0, 0, 0, 0);
 
     document.getElementById('detailTitle').textContent =
       `Air Temp ${bin}°F — ${+bin + BIN_WIDTH}°F  ·  ${samples.length} samples`;
@@ -452,11 +455,14 @@
     document.getElementById('detailBody').innerHTML = samples.map((s, i) => {
       const key      = `${activeBody}|${bin}|${i}`;
       const deleted  = !!deletions[key];
-      const ageDays  = (now - s[1]) / 86400;
+      const ts       = s[1];
+      const then     = new Date(ts * 1000)
+      then.setHours(0, 0, 0, 0)
+      const ageDays   = (today - then) / 86400000;
       const ageLabel =
-          ageDays == 1 ? "today"
-        : ageDays == 2 ? "yesterday"
-        : ageDays <  7 ? 'this week'
+          ageDays < 1  ? "today"
+        : ageDays < 2  ? "yesterday"
+        : ageDays < 7  ? 'this week'
         : ageDays < 14 ? "last week" 
         : ageDays < 30 ? '30 days'
         : ageDays < 60 ? '60 days'
@@ -473,7 +479,7 @@
           <td class="center cb-wrap"><input type="checkbox" ${deleted ? 'checked' : ''} onclick="handleCheckbox(event, '${key}')"></td>
           <td style="color:var(--text-dim)">${i + 1}</td>
           <td class="rate-val">${s[0].toFixed(2)}</td>
-          <td class="ts-val">${new Date(s[1] * 1000).toLocaleString()}</td>
+          <td class="ts-val">${new Date(ts * 1000).toLocaleString()}</td>
           <td><span class="age-badge ${ageClass}">${ageLabel}</span></td>
         </tr>`;
     }).join('');

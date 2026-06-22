@@ -78,7 +78,8 @@ class Persistence:
     def _presort_rate_table(self):
         """Ensure all Rate Tables are sorted"""
         for body_type in BODY_TYPES:
-            rate_table = self._data.get(body_type, {}).get("rate_table", {})
+            body_data = self._data.setdefault(body_type, {})
+            rate_table = body_data.get("rate_table", None)
             if rate_table is not None:
                 rate_table = self._sort_rate_table(rate_table)
                 self._data[body_type]["rate_table"] = rate_table
@@ -200,7 +201,7 @@ class Persistence:
             ### Only advance highwater mark if we actually merged samples
             ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
             new_highwater_ts = max(end for _, end in new_closed)
-            _LOG.debug(f"...Merged [{merged}] items, Advancing highwater mark [{local_time(self.highwater_ts)} --> {local_time(new_highwater_ts)}]")
+            _LOG.debug(f"...Merged [{merged}] items, Advancing highwater mark [{local_time(self.highwater_ts(body_type))} --> {local_time(new_highwater_ts)}]")
             self.set_highwater_ts(body_type, new_highwater_ts)
         else:
             _LOG.warning(f"Persistence.merge_and_save: [{body_type}] No samples merged despite {len(new_closed)} new closed intervals — highwater mark NOT advanced")

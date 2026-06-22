@@ -16,9 +16,9 @@ venv/
 .vscode/settings.json
 
 # HA Dev
-config/
-*.db
-*.log
+/config/
+/config/*.db
+/config*.log
 
 # Auto-generated
 custom_components/pool_esp/translations/en.json
