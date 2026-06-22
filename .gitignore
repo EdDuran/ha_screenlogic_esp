@@ -13,7 +13,7 @@ venv/
 .env
 
 # VS Code
-.vscode/settings.json
+.vscode/settings.json.swp
 
 # HA Dev
 config/
