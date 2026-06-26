@@ -442,7 +442,7 @@ class ESPEstimator:
     def _extract_heater_on_intervals(self, heat_states, now_ts=None):
         """
         Scan heat_states for heating ON/OFF transitions.
-        Returns a list of (on_start_ts, off_ts) tuples.
+        Returns a list of (on_start_ts, off_ts, is_open) tuples.
         """
         _LOG.debug(f"_extract_heater_on_intervals: Contains [{len(heat_states)}] Climate Status records")
 
@@ -462,7 +462,7 @@ class ESPEstimator:
                 self._heating_costs(on_start, ts)
                 intervals.append((on_start, ts, False))  # ← 3-tuple, closed
                 on_start = None
-
+        # end for each heat_state
 
         # Close open interval if heater still on
         if on_start is not None and now_ts is not None:
@@ -471,9 +471,7 @@ class ESPEstimator:
 
         for start_ts, end_ts, is_open in intervals:
             duration_min = (end_ts - start_ts) / 60.0
-            dt = datetime.fromtimestamp(start_ts)
-            time_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-            _LOG.debug(f"...start[{start_ts:.0f} {time_str}] duration[{duration_min:4.1f}m] is_open[{is_open}]")
+            _LOG.debug(f"...start[{start_ts:.0f} {local_time(start_ts)} -> {end_ts:.0f} {local_time(end_ts)}] duration[{duration_min:4.1f}m] is_open[{is_open}]")
 
         return intervals
 
@@ -585,17 +583,24 @@ class ESPEstimator:
                 mid_ts  = (start_ts + end_ts) / 2.0
                 avg_air = interpolate(air_temps, mid_ts)
                 if avg_air is not None:
-                    table.setdefault(air_bin(avg_air), []).append(duration_min / degrees_gained)
+                    table.setdefault(air_bin(avg_air), []).append(duration_min / degrees_gained, end_ts)
                     total_chunks += 1
                     _LOG.debug(f"...Interval: {duration_min:.1f} min, {degrees_gained:.2f}° gained, air={avg_air:.1f}F")
                 continue
-
+            ##
+            ### Get Interpolated value
+            ##
             degree_timestamps = [(water_at_start, start_ts)]
             for deg in range(start_degree, end_degree + 1):
                 ts = interpolate_ts_for_temp(water_temps, float(deg), start_ts, end_ts)
                 if ts is not None:
                     degree_timestamps.append((float(deg), ts))
-            degree_timestamps.append((water_at_end, end_ts))
+                    
+            # Replace the last entry's timestamp with end_ts instead of appending a duplicate
+            if degree_timestamps[-1][0] == water_at_end:
+                degree_timestamps[-1] = (water_at_end, end_ts)
+            else:
+                degree_timestamps.append((water_at_end, end_ts))
 
             for i in range(1, len(degree_timestamps)):
                 chunk_start_temp, chunk_start_ts = degree_timestamps[i - 1]
@@ -622,6 +627,8 @@ class ESPEstimator:
 
                 table.setdefault(air_bin(avg_air), []).append([chunk_min / chunk_deg, chunk_end_ts])
                 total_chunks += 1
+            # end for each degree timestamp
+        # end for each interval
 
         return {
             "table":            table,

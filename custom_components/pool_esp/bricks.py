@@ -283,6 +283,11 @@ class ReadyBrick(Brick):
 
     async def execute(self) -> str:
         result = self._get_result()
+        if result == RESULT_ACTIVE and self.context.is_last_degree():
+            ### Still ACTIVE (heating) but at setpoint
+            ### Then we're at Standby - which keep us at State:Ready till heating is done
+            result = RESULT_STANDBY
+
         self.context.esp = ESP(0, 0, STATUS_READY)
         return result
 

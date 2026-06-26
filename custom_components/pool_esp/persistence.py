@@ -26,7 +26,7 @@ KEY_SAMPLE_COUNT          = "sample_count"
 KEY_LAST_MERGE_INTERVALS  = "last_merge_intervals"
 KEY_LAST_MERGE_ADDED      = "last_merge_added"
 KEY_LAST_MERGE_PRUNED     = "last_merge_pruned"
-KEY_TOTAL_RUNTIME_MINUTES = "total_runtime_minutes"
+KEY_TOTAL_RUNTIME_HOURS   = "total_runtime_hours"
 KEY_TOTAL_COST            = "total_cost"
 
 
@@ -49,7 +49,7 @@ class Persistence:
                 "sample_count": 42,
                 "last_merge_intervals": 3,
                 "total_cost": 59.83,
-                "total_runtime_minutes": 5128.2
+                "total_runtime_hours": 84.5
             },
         "pool_type": "Screenlogic"
     }
@@ -227,12 +227,15 @@ class Persistence:
 
     def _update_heater_costs(self, body_data: dict, new_runtime_minutes: float, cost_per_hour: float):
         ### Update runtime and cost totals — these are used for diagnostics and to determine if the pool is "expensive" to heat
-        existing_runtime = body_data.get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
-        existing_cost    = body_data.get(KEY_TOTAL_COST, 0.0)
-        new_cost         = (new_runtime_minutes / 60.0) * cost_per_hour
-        body_data[KEY_TOTAL_RUNTIME_MINUTES] = existing_runtime + new_runtime_minutes
-        body_data[KEY_TOTAL_COST]            = existing_cost + new_cost
-        _LOG.debug(f"...runtime[{new_runtime_minutes:.1f} min] total[{body_data[KEY_TOTAL_RUNTIME_MINUTES]:.1f} min]")
+        new_runtime_hours = new_runtime_minutes / 60.0
+        existing_runtime  = body_data.get(KEY_TOTAL_RUNTIME_HOURS, 0.0)
+        existing_cost     = body_data.get(KEY_TOTAL_COST, 0.0)
+        new_cost          = new_runtime_hours * cost_per_hour
+
+        body_data[KEY_TOTAL_RUNTIME_HOURS] = existing_runtime + new_runtime_hours
+        body_data[KEY_TOTAL_COST]          = existing_cost + new_cost
+
+        _LOG.debug(f"...runtime[{new_runtime_hours:.2f} hours] total[{body_data[KEY_TOTAL_RUNTIME_HOURS]:.2f} hours]")
         _LOG.debug(f"...cost[+${new_cost:.2f}] total[${body_data[KEY_TOTAL_COST]:.2f}]")
 
 
@@ -295,8 +298,8 @@ class Persistence:
     def body_data(self, body_type:str) -> dict:
         return self._data.setdefault(body_type, {})
 
-    def total_runtime_minutes(self, body_type:str) -> float:
-        return self.body_data(body_type).get(KEY_TOTAL_RUNTIME_MINUTES, 0.0)
+    def total_runtime_hours(self, body_type:str) -> float:
+        return self.body_data(body_type).get(KEY_TOTAL_RUNTIME_HOURS, 0.0)
 
     def total_cost(self, body_type) -> float:
         return self.body_data(body_type).get(KEY_TOTAL_COST, 0.0)

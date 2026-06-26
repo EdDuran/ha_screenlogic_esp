@@ -389,7 +389,7 @@
     const allRates = Object.values(table).flat().map(s => s[0]);
     const avgRate  = allRates.length ? allRates.reduce((a,b) => a+b, 0) / allRates.length : 0;
     const avgDegPerHour = avgRate ? 60 / avgRate : 0;
-    const heatingHours = bd.total_runtime_minutes / 60 || 0;
+    const heatingHours = bd.total_runtime_hours || 0;
     const heatingCost = bd.total_cost || 0;
 
     document.getElementById('statBins').textContent    = bins;
@@ -397,7 +397,7 @@
     document.getElementById('statAvgRate').textContent = avgRate ? avgRate.toFixed(2) : '—';
     document.getElementById('statAvgDegPerHour').textContent = avgRate ? avgDegPerHour.toFixed(1) : '—';
     document.getElementById('heatingCost').textContent = heatingCost ? `$${heatingCost.toFixed(2)}` : '—';
-    document.getElementById('heatingHours').textContent = heatingHours ? `${heatingHours.toFixed(1)}` : '—';
+    document.getElementById('heatingHours').textContent = heatingHours ? `${heatingHours.toFixed(2)}` : '—';
   }
 
   function renderGrid(bd) {

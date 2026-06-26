@@ -708,7 +708,7 @@ class Context():
         """
         If Water Temp is at Target and Heater still on, then this is the "Last Degree"
         """
-        return (self.water_temp >= self.target_temp) and self.is_heating
+        return self.is_at_setpoint() and self.is_heating
 
     def is_circuit_on(self) -> bool:
         """

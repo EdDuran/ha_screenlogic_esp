@@ -114,13 +114,12 @@ class HeaterCostSensor(ESPEntity, SensorEntity):
         options      = self._coordinator.config_entry.options
         fuel_type    = options.get(CONF_HEATER_FUEL_TYPE, "unknown")
         cost_per_hour = self._get_cost_per_hour(options, fuel_type)
-        runtime_min  = self._coordinator.get_persistence().total_runtime_minutes(self._body_type)
+        runtime_hours  = self._coordinator.get_persistence().total_runtime_hours(self._body_type)
 
         attrs = {
             "fuel_type":             fuel_type,
             "cost_per_hour":         cost_per_hour,
-            "total_runtime_minutes": round(runtime_min, 1),
-            "total_runtime_hours":   round(runtime_min / 60.0, 2),
+            "total_runtime_hours":   round(runtime_hours, 2),
         }
 
         # Fuel-specific attributes
@@ -130,8 +129,7 @@ class HeaterCostSensor(ESPEntity, SensorEntity):
         elif fuel_type in ("heat_pump", "electric"):
             attrs["heater_kw"]        = options.get(CONF_ELECTRIC_HEATER_KW, 0)
             attrs["cost_per_kwh"]     = options.get(CONF_ELECTRIC_COST_PER_KWH, 0.0)
-            attrs["total_kwh"]        = round((runtime_min / 60.0) * 
-                                        options.get(CONF_ELECTRIC_HEATER_KW, 0), 2)
+            attrs["total_kwh"]        = round(runtime_hours * options.get(CONF_ELECTRIC_HEATER_KW, 0), 2)
 
         return attrs
 
@@ -150,15 +148,17 @@ class HeaterCostSensor(ESPEntity, SensorEntity):
 
     def add_interval_cost(self, duration_minutes: float):
         """Called when a heating interval completes."""
+        duration_hours = duration_minutes / 60.0
+
         heating_type = self._coordinator.get_option(CONF_HEATER_FUEL_TYPE, 0.0)
         if heating_type == "gas":
             cost_per_unit = self._coordinator.get_option(CONF_GAS_COST_PER_THERM, 0.0)
             btu_per_unit = self._coordinator.get_option(CONF_GAS_HEATER_BTU, 0.0)
             if cost_per_unit > 0 and btu_per_unit > 0:
-                cost = (duration_minutes / 60.0) * (btu_per_unit / 100000) * cost_per_unit
+                cost = duration_hours * (btu_per_unit / 100000) * cost_per_unit
                 self._total_cost += cost
                 self.async_write_ha_state()
-                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_minutes:.1f} min] total[${self._total_cost:.2f}]")
+                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_hours:.2f} hours] total[${self._total_cost:.2f}]")
         elif heating_type in ("heat_pump", "electric"):
             cost_per_hour = self._coordinator.get_option(CONF_ELECTRIC_COST_PER_KWH, 0.0)
             heater_kw = self._coordinator.get_option(CONF_ELECTRIC_HEATER_KW, 0.0)
@@ -166,7 +166,7 @@ class HeaterCostSensor(ESPEntity, SensorEntity):
                 cost = (duration_minutes / 60.0) * heater_kw * cost_per_hour
                 self._total_cost += cost
                 self.async_write_ha_state()
-                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_minutes:.1f} min] total[${self._total_cost:.2f}]")
+                _LOG.debug(f"HeaterCostSensor({self._attr_unique_id}) added [${cost:.2f}] for [{duration_hours:.2f} hours] total[${self._total_cost:.2f}]")
 
 # end class HeaterCostSensor
 
@@ -190,7 +190,6 @@ class HeaterRuntimeSensor(ESPEntity, SensorEntity):
         super().__init__(coordinator)
 
         self._total_hours    = 0.0
-
         self._coordinator    = coordinator
         self._body_type      = body_type
         prefix               = coordinator.adapter_config.get(POOL_PREFIX)
@@ -203,13 +202,14 @@ class HeaterRuntimeSensor(ESPEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        return round(self._coordinator.get_persistence().total_runtime_minutes(self._body_type), 1)
+        return round(self._coordinator.get_persistence().total_runtime_hours(self._body_type), 1)
 
     def add_interval_runtime(self, duration_minutes:float):
         """Called when a heating interval completes."""
-        self._total_hours += (duration_minutes / 60)
+        duration_hours = duration_minutes / 60.0
+        self._total_hours += duration_hours
         self.async_write_ha_state()
-        _LOG.debug(f"HeaterRuntimeSensor({self._attr_unique_id}) added [{duration_minutes:.1f} min] total[{self._total_hours:.1f} hours]")
+        _LOG.debug(f"HeaterRuntimeSensor({self._attr_unique_id}) added [{duration_hours:.2f} hours] total[{self._total_hours:.2f} hours]")
 
 # end class HeaterRuntimeSensor
 
