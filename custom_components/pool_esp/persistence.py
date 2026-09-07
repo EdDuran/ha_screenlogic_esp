@@ -196,15 +196,17 @@ class Persistence:
         ###       But there *were* New Closed Intervals
         ###
         if merged > 0 or new_runtime_minutes > 0:
-            self._update_heater_costs(body_data, new_runtime_minutes, cost_per_hour)
+            if new_runtime_minutes > 0:
+                self._update_heater_costs(body_data, new_runtime_minutes, cost_per_hour)
 
-            ### Only advance highwater mark if we actually merged samples
-            ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
-            new_highwater_ts = max(end for _, end in new_closed)
-            _LOG.debug(f"...Merged [{merged}] items, Advancing highwater mark [{local_time(self.highwater_ts(body_type))} --> {local_time(new_highwater_ts)}]")
-            self.set_highwater_ts(body_type, new_highwater_ts)
+            if merged > 0:
+                ### Only advance highwater mark if we actually merged samples
+                ### prevents skipping intervals due to merges that didn't "take" (e.g. all samples were duplicates)
+                new_highwater_ts = max(end for _, end in new_closed)
+                _LOG.debug(f"...Merged [{merged}] items, Advancing HIGHWATER mark [{local_time(self.highwater_ts(body_type))} --> {local_time(new_highwater_ts)}]")
+                self.set_highwater_ts(body_type, new_highwater_ts)
         else:
-            _LOG.warning(f"Persistence.merge_and_save: [{body_type}] No samples merged despite {len(new_closed)} new closed intervals — highwater mark NOT advanced")
+            _LOG.warning(f"Persistence.merge_and_save: [{body_type}] No samples merged despite {len(new_closed)} new closed intervals — HIGHWATER mark NOT advanced")
 
         ###
         ### ----- Sort the Rate Table

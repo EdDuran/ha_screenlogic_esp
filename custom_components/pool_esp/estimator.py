@@ -68,6 +68,9 @@ class LiveHistoryAdapter(HistoryAdapter):
     async def _fetch_all_history(self):
         from homeassistant.components.recorder import get_instance
 
+        ### TODO
+        ### Instead of always going back HISTORY_DAYS, we could do:
+        ### days = (highwater is not None) ? highwater_ts - 2 DAYS : HISTORY_DAYS
         end: datetime   = datetime.now(timezone.utc)
         start: datetime = end - timedelta(days=HISTORY_DAYS)
         instance = get_instance(self._hass)
@@ -223,7 +226,7 @@ class ESPEstimator:
             skipped_no_air   = result["skipped_no_air"]
 
             _LOG.debug(
-                f"...calculate: rate table built [{self._body_type}] — skipped(short={skipped_short}, no_rise={skipped_no_rise} slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
+                f"...calculate: [{self._body_type}] rate table built [{len(table)}] skipped(short={skipped_short}, no_rise={skipped_no_rise} slow={skipped_slow} no_water={skipped_no_water} no_air={skipped_no_air})"
             )
 
             if not table:

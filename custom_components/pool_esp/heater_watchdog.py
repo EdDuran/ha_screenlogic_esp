@@ -101,7 +101,9 @@ class HeaterWatchdog:
                 await self._flag_heater_issue(current_temp, expected_rise, actual_rise)
             else:
                 # Performing OK — reschedule for next check
-                self.start(current_temp, self._expected_rate)
+                degrees_remaining = body_config[WATER_TEMP].target - current_temp
+                if degrees_remaining > 0:
+                    self.start(current_temp, self._expected_rate, degrees_remaining)
         except Exception as e:
             _LOG.error(traceback.format_exc())
             _LOG.error(f"Watchdog._check: [{self._body_type}] failed to execute: {e}")
