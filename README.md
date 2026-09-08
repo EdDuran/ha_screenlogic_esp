@@ -9,7 +9,7 @@ Pool ESP automatically discovers your Pentair Screenlogic Device and creates the
 
 The HA Recorder purges data after 10 days, thus Pool ESP can only look back that far in time. The Recorder purge can be adjusted in your [configuration.yaml](#configuration-steps).
 
-To provide more useful estimates, Pool ESP maintains heating characteristics in private storage for up to a year. This data is also purned to alieviate unbounded growth.
+To provide more useful estimates, Pool ESP maintains heating characteristics in private storage for up to a year. This data is also pruned to alleviate unbounded growth.
 
 Two sensor entities are created by Pool ESP; one for the Pool and one for the Spa. These entities provide the [State of Operation](#states) and additional **Attributes**:
 
@@ -37,7 +37,7 @@ Pool ESP currently relies on data provided by the *Pentair Screenlogic Integrati
 Look for "Pool ESP" and install
 
 ## Configuration steps
-Pool ESP is Zero Config (well, other than optional heater type and energy usage and cost). The Integration automatically identifies your Pentair Screenlogic Device and adds it's own Sensor Entities.
+Pool ESP is Zero Config (well, other than optional heater type and energy usage and cost). The Integration automatically identifies your Pentair Screenlogic Device and adds its own Sensor Entities.
 
 For example, Pool ESP discovers Device "**Pentair: 11-22-33**" and creates sensors:
 * sensor.pentair_11_22_33_pool_esp
@@ -53,10 +53,10 @@ If no suitable Device is found, the Integration setup displays an error message.
 You can adjust how long the HA Recorder maintains historical data by adding to your **configuration.yaml**:
 
 ```
-  recorder:
-   purge_keep_days: 30  # Adjust to your desired number of days
-   auto_purge: true
-   auto_repack: true
+recorder:
+  purge_keep_days: 30  # Adjust to your desired number of days
+  auto_purge: true
+  auto_repack: true
 ```
 
 ## How ESP learning works
@@ -66,12 +66,12 @@ How much is "sufficient"?
 
 Just a single heating session is all it takes. ESP provides a Confidence percentage (determined by the quality and quantity of data available). The Confidence could start low (6% with only that single data point) and gradually increase over time as more quality data becomes available.
 
-Pool ESP looks at how long it takes the Pool or Spa to increase in temperature and determines a rate. It does this in 5 degree Air Temperature bins. Cooler air temperatures could result in longer rates than wamer air temperatures. This will be evident in the [ESP Rate Viewer](#esp-rate-viewer).
+Pool ESP looks at how long it takes the Pool or Spa to increase in temperature and determines a rate. It does this in 5 degree Air Temperature bins. Cooler air temperatures could result in longer rates than warmer air temperatures. This will be evident in the [ESP Rate Viewer](#esp-rate-viewer).
 
 It's interesting to note: the larger Pool volume is more affected by Air Temperature than a small Spa. This actually makes sense as there is more surface area.
 
 ## Watchdog
-Once Pool ESP understands the heating characteristics it can alert if the heating time exceeds expectations. This FYI notification could be a natural event, such a very cold day, or indicate there is a heater malfunction which needs investigation.
+Once Pool ESP understands the heating characteristics it can alert if the heating time exceeds expectations. This FYI notification could be a natural event, such as a very cold day, or indicate there is a heater malfunction which needs investigation.
 
 ## States
 Pool ESP sensor entities provide the State of Operation:
@@ -80,7 +80,7 @@ Pool ESP sensor entities provide the State of Operation:
 | ------------- | ----------- | ---------------- |
 | off         | Water is not being heated | Learning or D-HH:MM |
 | sensing     | Heating; 2 minute delay, waiting for the Water Temperature to stabilize | Sensing |
-| heating     | Activly heating the Water | Learning or D-HH:MM |
+| heating     | Actively heating the Water | Learning or D-HH:MM |
 | ready       | Water Temperature has reached the Set Point | Ready |
 | standby     | At Set Point, heating paused | Ready |
 | maintaining | At Set Point, heating the Water to maintain temperature | Ready |
@@ -102,7 +102,7 @@ In this example, the Spa Circuit is off, Heater enabled but not heating. Water i
 <img width="644" height="626" alt="image" src="https://github.com/user-attachments/assets/261c4c4c-9284-49cc-8690-d6ef18d20235" />
 
 ## ESP Rate Viewer
-The Pool ESP settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactivly delete extraneous values.
+The Pool ESP settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactively delete extraneous values.
 
 ### First Time
 The first time running the ESP Rate Viewer you'll need to provide your Long-lived Access Token.
