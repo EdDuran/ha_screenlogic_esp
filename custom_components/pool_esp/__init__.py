@@ -1,33 +1,40 @@
 from __future__ import annotations
-from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, callback
+import traceback
+from custom_components.pool_esp.coordinator import ESPCoordinator
+from custom_components.pool_esp.test_runner import run_scenario
+from custom_components.pool_esp.util import PoolAdapter, log_exception, start_debugger
+from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady, HomeAssistantError
 from homeassistant.components.homeassistant import IssueSeverity
 from homeassistant.helpers.device_registry import DeviceEntry
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceValidationError
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import device_registry as dr
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.frontend import async_register_built_in_panel, async_remove_panel
 
 
 from .panel import register_panel, unregister_panel
 from .persistence import Persistence
-from .coordinator import ESPCoordinator
 from .const import (
+    BODY_TYPES,
+    CONF_SHOW_PANEL,
     DOMAIN,
     PLATFORMS,
     ADDONS_COORDINATOR,
     POOL_ADAPTER_CONFIG,
     DEFAULT_POOL_ADAPTER
 )
-from .util import *
-from .test_runner import *
 import logging
-import debugpy
 import os
 import shutil
 
 _LOG = logging.getLogger(__name__)
+
+###############################################################################
+###
+### ----- Class ESPRatesView --------------------------------------------------
+###
+###############################################################################
 
 class ESPRatesView(HomeAssistantView):
     """
@@ -40,20 +47,20 @@ class ESPRatesView(HomeAssistantView):
 
     async def get(self, request):
         hass = request.app["hass"]
-
-        # Load from any body type — top level data is shared
-        p = Persistence(hass, BODY_TYPES[0])
-        await p.async_load()
+        coordinator:ESPCoordinator = self._get_coordinator(hass)
 
         result = {
-            "pool_type": p._data.get("pool_type", "Unknown"),
+            "pool_type": coordinator._pool_adapter.name,
             "bodies":    {}
         }
 
+        p = coordinator.get_persistence()
+
         for body_type in BODY_TYPES:
-            p = Persistence(hass, body_type)
-            await p.async_load()
-            result["bodies"][body_type] = p.body_data
+            body_data = p.body_data(body_type)
+            result["bodies"][body_type] = {
+                **body_data                            # rate_table, highwater_ts, etc.
+            }            
         
         return self.json(result)
 
@@ -61,58 +68,46 @@ class ESPRatesView(HomeAssistantView):
         hass = request.app["hass"]
         data = await request.json()
         bodies = data.get("bodies", {})
+        coordinator:ESPCoordinator = self._get_coordinator(hass)
+
+        p = coordinator.get_persistence()
+        await p.async_load()
 
         for body_type, body_data in bodies.items():
-            p = Persistence(hass, body_type)
-            await p.async_load()
-            p._data["pool_type"] = data.get("pool_type", "Unknown") # Ensure pool_type is saved at top level for easy access
-            p._data[body_type] = body_data
-            await p.async_save()
+            p.data[body_type] = body_data
+
+        await p.async_save()
             
         return self.json({"status": "ok"})
+    
+    def _get_coordinator(self, hass):
+        entries = hass.config_entries.async_entries(DOMAIN)
+        if not entries:
+            raise RuntimeError("Integration not loaded")
+        
+        coordinator = hass.data[DOMAIN][entries[0].entry_id][ADDONS_COORDINATOR]
+        return coordinator
 
-
-def _start_debugger():
-
-    _LOG.debug(f"__init__._start_debugger: Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
-
-    if not os.getenv("HA_DEBUG"):
-        _LOG.warning("HA_DEBUG is not set...Debugging will not be available")
-        return
-
-    try:
-        debugpy.listen(("0.0.0.0",5678))
-        _LOG.debug("__init__.Debugger listening on 5678")
-    except RuntimeError:
-        _LOG.warning("__init__.Debugger already active")
-
-    if not debugpy.is_client_connected():
-        _LOG.warning("Waiting for debugger attach...")
-        debugpy.wait_for_client()
-
-        debugpy.breakpoint()
-
-    _LOG.debug("__init__.Debugger attached")
 
 ###
 ### ----- Reload Integration ---------------------------------------------------
 ###
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Reload the config entry."""
     _LOG.debug(f"__init__.async_reload_entry")
-    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 ###
 ### ----- Unload Integration ---------------------------------------------------
 ###
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Handle unload — must be implemented for reload to work."""
     _LOG.debug(f"__init__.async_unload_entry")
 
     # Always clean up panel on unload
     unregister_panel(hass)
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
 
     # Pop add-on data
     hass.data.pop(ADDONS_COORDINATOR, None)
@@ -124,21 +119,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 ###
 ### ----- Setup ----------------------------------------------------------------
 ###
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    _LOG.debug(f"__init__.async_setup")
 
-    _LOG.debug(f"__init__.setup")
-
-    ## Save ESP configuration
+    ## Save Pool ESP configuration
     hass.data.setdefault(DOMAIN, {})
     if DOMAIN in config:
         hass.data[DOMAIN]["yaml_config"] = config[DOMAIN]
-
-
-    # Return boolean to indicate that initialization was successful.
-    return True
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    _LOG.debug(f"__init__.async_setup")
 
     await _async_copy_www_assets(hass)
 
@@ -150,6 +137,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 ###
 async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> bool:
 
+    from .coordinator import ESPCoordinator
 
     ### ----- Run Service Test
     async def handle_run_test(call:ServiceCall):
@@ -170,7 +158,10 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
 
     _LOG.debug(f"__init__.async_setup_entry")
 
-    await hass.async_add_executor_job(_start_debugger)
+    ###
+    ### Start the Debugger
+    ###
+    await start_debugger(hass)
 
     # Register reload handler
     config_entry.async_on_unload(
@@ -193,9 +184,9 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     try:
         pool_adapter:PoolAdapter = await PoolAdapter.create(hass, adapter_name)
     except Exception as e:
-        _LOG.error(f"Failed to create Pool Adapter[{adapter_name}]: {e}")
+        log_exception(e, f"Pool ESP: Failed to complete [config_flow.async_setup_entry]")
 
-        ir.async_get_or_create(
+        ir.async_create_issue(
             hass,
             DOMAIN,
             "missing_pool_adapter",
@@ -205,7 +196,7 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
         )
         # Don't fail setup entirely — just raise ConfigEntryNotReady
         # HA will retry setup automatically
-        raise ConfigEntryNotReady(f"Failed to initialize integration") from e
+        raise ConfigEntryNotReady(f"Failed to initialize Pool ESP integration") from e
     
     ###
     ### Create ESP Coordinator with the Pool Adapter's Configuration
@@ -224,12 +215,13 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ###
     ### Register the test scenario service
     ###
-    _LOG.debug(f"...async_setup_entry: Register [run_test_scenario] -> [run_scenario]")
-    hass.services.async_register(
-        "pool_esp",
-        "run_test_scenario",
-        handle_run_test
-    )
+    if os.getenv("HA_DEBUG"):
+        hass.services.async_register(
+            "pool_esp",
+            "run_test_scenario",
+            handle_run_test
+        )
+        _LOG.debug(f"...Register [run_test_scenario] -> [run_scenario]")
 
     ###
     ### Register panel if option enabled
@@ -241,10 +233,14 @@ async def async_setup_entry(hass:HomeAssistant, config_entry:ConfigEntry) -> boo
     ### Register the ESP rates view
     ###
     hass.http.register_view(ESPRatesView())
+    _LOG.debug(f"...Register ESPRateView web API")
 
-    _LOG.debug(f"..async_setup_entry: Done")
 
     return True
+
+###
+### ---------------------------------------------------------------------------
+###
 
 async def _async_copy_www_assets(hass:HomeAssistant):
     """Copy www files to /config/www/pool_esp on every startup."""
@@ -256,8 +252,6 @@ async def _async_copy_www_assets(hass:HomeAssistant):
 
     def _copy():
         try:
-            _LOG.debug(f"Copying assets from {source_dir} to {dest_dir}...")
-
             os.makedirs(dest_dir, exist_ok=True)
             if os.path.exists(source_dir):
                 for filename in os.listdir(source_dir):

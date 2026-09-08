@@ -5,12 +5,13 @@
   "data": {
     "items": [
       {
-        "id": "pool_esp",
+        "id": "dashboard_pool_esp",
         "show_in_sidebar": true,
+        "icon": "mdi:pool-thermometer",
         "title": "Pool ESP",
         "require_admin": false,
         "mode": "storage",
-        "url_path": "pool-esp"
+        "url_path": "dashboard-pool-esp"
       }
     ]
   }

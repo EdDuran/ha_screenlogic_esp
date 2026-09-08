@@ -1,15 +1,14 @@
 {
   "domain": "pool_esp",
   "name": "Pool ESP",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.10",
   "documentation": "https://github.com/EdDuran/ha_screenlogic_esp",
   "issue_tracker": "https://github.com/EdDuran/ha_screenlogic_esp/issues",
-  "dependencies": ["screenlogic", "recorder"],
-  "after_dependencies": ["screenlogic"],
+  "dependencies": ["screenlogic"],
+  "after_dependencies": ["recorder", "history"],
   "codeowners": ["@edduran"],
   "requirements": [],
   "iot_class": "local_polling",
-  "config_flow": "true",
-  "diagnostics": true,
-  "hacs": "..."
+  "config_flow": true,
+  "diagnostics": true
 }

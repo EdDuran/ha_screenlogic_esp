@@ -1,9 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime
 import importlib
 import logging
+import os
 from string import Template
 from abc import ABC, abstractmethod
 from zoneinfo import ZoneInfo
+from custom_components.pool_esp.const import CONTEXT_PRIOR_TARGET_TEMP
+import debugpy
 from homeassistant.core import HomeAssistant
 
 from .const import RESULT_ACTIVE, RESULT_OFF, RESULT_STANDBY, SM_START
@@ -12,11 +15,60 @@ from .timer import Timer
 
 _LOG = logging.getLogger(__name__)
 
+#
+# Start Debugger
+#
+async def start_debugger(hass: HomeAssistant):
+    await hass.async_add_executor_job(_start_debugger)
+
+def _start_debugger():
+    _LOG.debug(f"Starting debugger...HA_DEBUG=[{os.getenv('HA_DEBUG')}]")
+
+    if not os.getenv("HA_DEBUG"):
+        _LOG.debug("HA_DEBUG is not set...Debugging will not be available")
+        return
+
+    try:
+        debugpy.listen(("0.0.0.0",5678))
+        _LOG.debug("__init__.Debugger listening on 5678")
+    except RuntimeError:
+        pass ### _LOG.debug("FYI: Debugger is already active")
+
+    if not debugpy.is_client_connected():
+        _LOG.warning("Waiting for debugger attach...")
+        debugpy.wait_for_client()
+
+        debugpy.breakpoint()
+
+    _LOG.debug("Debugger attached")
+
+def breakpoint():
+    if debugpy.is_client_connected():
+        debugpy.breakpoint()
+    else:
+        _LOG.warning("Cannot set breakpoint: Debugger is not attached")
+
+def log_exception(e:Exception, msg:str=None) -> None:
+    indent = ""
+
+    if msg is not None:
+        _LOG.error(msg)
+        indent += ".."
+
+    current_exc = e
+    while current_exc:
+        _LOG.error(f"{indent}{current_exc}")
+        current_exc = current_exc.__cause__ or current_exc.__context__
+        indent +=".."
+
 
 def local_time(ts:float, hass:HomeAssistant=None) -> str:
     """
     Convert a UTC timestamp to local time and return the local date and time as strings.
     """
+    if ts is None or ts == 0.0:
+        return None
+    
     if hass:
         tz = ZoneInfo(hass.config.time_zone)
         return datetime.fromtimestamp(ts, tz=tz).strftime('%Y-%m-%d %H:%M:%S %Z')
@@ -40,9 +92,11 @@ def parse_entity_change(changes: set) -> tuple[str, str, str]:
 
 
 
+###############################################################################
 ###
-### ----- Class EntityCombo ---------------------------------------------------
+### ----- EntityCombo ---------------------------------------------------------
 ###
+###############################################################################
 
 class EntityCombo:
     def __init__(self, entity_combo:str):
@@ -91,7 +145,7 @@ class EntityCombo:
             self._watch = True if parts[WATCH] == "WATCH" else False
         except Exception as e:
             _LOG.error(f"parse_entity_combo: Failed to parse [{self._entity_combo}]; {e}")
-            raise ESPException("ERROR", f"parse_entity_combo: Failed to parse [{self._entity_combo}]") from e
+            raise ESPException(f"parse_entity_combo: Failed to parse [{self._entity_combo}]") from e
 
     def parse_entity_change(changes: set):
         """
@@ -110,19 +164,28 @@ class EntityCombo:
         return None, None, None
 
 
+###############################################################################
 ###
-### ----- Class PoolAdapter ---------------------------------------------------
+### ----- PoolAdapter ---------------------------------------------------------
 ###
+###############################################################################
+
 class PoolAdapter(ABC):
     import importlib
 
     def __init__(self, name:str, debug_mode=False):
         self._name = name
         self._debug_mode = debug_mode
+        self._is_ready = False
+        self._adapter_config = {}
 
     @property
     def name(self):
         return self._name
+    
+    @property
+    def prefix(self) -> str:
+        return self._adapter_config[POOL_PREFIX]
 
     @property
     def watch_entities(self) -> dict:
@@ -140,8 +203,17 @@ class PoolAdapter(ABC):
     def debug_mode(self):
         return self._debug_mode
 
+    @property
+    def is_ready(self):
+        """ Is the Pool Adapter Ready? """
+        return self._is_ready
+    
+    @is_ready.setter
+    def is_ready(self, value):
+        self._is_ready = value
+
     @abstractmethod
-    def discover():
+    def _discover():
         """ Discover the pool devices """
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -158,7 +230,7 @@ class PoolAdapter(ABC):
         raise NotImplementedError("Subclasses must implement this method.")
     
     @classmethod
-    async def create(cls, hass:homeassistant, name: str, *args, **kwargs) -> PoolAdapter:
+    async def create(cls, hass:HomeAssistant, name: str, *args, **kwargs) -> PoolAdapter:
         """
         Create an adapter instance. The name should be defined in the configuration.yaml:
             screenlogic_esp:
@@ -189,12 +261,16 @@ class PoolAdapter(ABC):
             raise
         
         except Exception as e:
-            raise ESPException(f"Failed to create Pool Adapter[{name}]") from e
+            _LOG.debug(f"Failed to create Pool Adapter[{name}]: {e}")
+            raise ESPException(f"PoolAdapter: Failed to create adapter[{name}]") from e
     
 
+###############################################################################
 ###
-### ----- Class HistoryAdapter -------------------------------------------------
+### ----- HistoryAdapter ------------------------------------------------------
 ###
+###############################################################################
+
 class HistoryAdapter(ABC):
     """
     A base class to adapt and manage historical data.
@@ -240,9 +316,12 @@ class HistoryAdapter(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+
+###############################################################################
 ###
-### ----- Class ESP ------------------------------------------------------------
+### ----- ESP -----------------------------------------------------------------
 ###
+###############################################################################
 
 class ESP:
     """
@@ -252,6 +331,8 @@ class ESP:
         self._seconds = seconds
         self._confidence = confidence
         self._status = status
+        self._rate = None
+        self._degrees_remaining = None
         self._days = 0
         self._hours = 0
         self._minutes = 0
@@ -340,22 +421,33 @@ class ESP:
         self._degrees_remaining = value 
 
 
+###############################################################################
 ###
-### ----- Class ESPException ---------------------------------------------------
+### ----- ESPException --------------------------------------------------------
 ###
+###############################################################################
+
 class ESPException(Exception):
     """
     Exception raised by ESP services.
     status  — user-facing display string for the HA helper entity
     """
-    def __init__(self, status: str, detail:str = None):
-        Exception.__init__(self, detail or status)   # explicit parent call
-        self.status = status
-        self.detail = detail
+    def __init__(self, status: str):
+        Exception.__init__(self, status)   # explicit parent call
+        self._status = status
 
+    def __str__(self) -> str:
+        return f"ESPException({self._status})"
+    
+    @property
+    def status(self) -> str:
+        return self._status
+
+###############################################################################
 ###
-### ----- Class Config ---------------------------------------------------------
+### ----- Config --------------------------------------------------------------
 ###
+###############################################################################
 
 class Config():
     """
@@ -367,9 +459,12 @@ class Config():
     def __str__(self) -> str:
         return f"{self._config}"
 
+
+###############################################################################
 ###
-### ----- Class Context --------------------------------------------------------
+### ----- Context -------------------------------------------------------------
 ###
+###############################################################################
 
 class Context():
     """
@@ -460,6 +555,15 @@ class Context():
 
 
     @property
+    def prior_target_temp(self) -> float:
+        return self._context.get(CONTEXT_PRIOR_TARGET_TEMP, None)
+
+    @prior_target_temp.setter
+    def prior_target_temp(self, value):
+        self._context[CONTEXT_PRIOR_TARGET_TEMP] = value
+
+
+    @property
     def target_temp(self) -> float:
         return self._context.get(CONTEXT_TARGET_TEMP, None)
 
@@ -541,7 +645,7 @@ class Context():
 
 
     @property
-    def coordinator(self) -> dict:
+    def coordinator(self):
         return self._context.get(CONTEXT_COORDINATOR)
 
     @coordinator.setter
@@ -559,11 +663,11 @@ class Context():
 
 
     @property
-    def hass(self) -> homeassistant:
+    def hass(self) -> HomeAssistant:
         return self._context.get(CONTEXT_HASS)
 
     @hass.setter
-    def hass(self, value:homeassistant):
+    def hass(self, value:HomeAssistant):
         self._context[CONTEXT_HASS] = value
 
 
@@ -604,7 +708,7 @@ class Context():
         """
         If Water Temp is at Target and Heater still on, then this is the "Last Degree"
         """
-        return (self.water_temp >= self.target_temp) and self.is_heating
+        return self.is_at_setpoint() and self.is_heating
 
     def is_circuit_on(self) -> bool:
         """
@@ -637,28 +741,38 @@ class Context():
     
     def is_target_change(self) -> bool:
         """Is the Body Target Temperature changed value? """
+        target_temp = self.target_temp
+        prior_target_temp = self.prior_target_temp
+
         target_change:bool = False
 
-        if self.changes:
+        if prior_target_temp is not None and target_temp is not None and self.changes is not None:
             for change in self.changes:
                 body_type, attr, value = parse_entity_change(change)
-                _LOG.debug(f"...{body_type} : {attr} : {value}")
-                target_change = body_type == self.body_type and attr == ATTR_TEMP
+                if (body_type == self.body_type and attr == ATTR_TEMP):
+                    target_change = target_temp > prior_target_temp
+        ###
+        ### After executing: ESPCoordinator._execute_with_current_data ...
+        ###   self.prior_target_temp = target_temp    # Update prior target temp for next time
 
-        _LOG.debug(f"_is_target_change({self.changes})? --> [{target_change}]")
+        if target_change:
+            _LOG.debug(f"[{self.body_type}] Target Temp Change [{prior_target_temp} --> {target_temp}]")
 
         return target_change
     
     def get_esp_result(self) -> str:
         """
         Get the State Machine signal from current sensor values.
-            OFF     Circuit Off or Heater Disabled
-            ACTIVE  Circuit On and Heater On
-            STANDBY Circuit On and Heater Enabled
+            OFF           Circuit Off or Heater Disabled
+            ACTIVE        Circuit On and Heater On
+            STANDBY       Circuit On and Heater Enabled
+            TARGETCHANGE  Circuit On and Heater Enabled and Target Temp Increased
         """
         result = RESULT_OFF
         if (self.is_circuit_on() and self.is_heat_enabled()):
             result = RESULT_ACTIVE if self.is_heating() else RESULT_STANDBY
+        
+        result = RESULT_TARGETCHANGE if self.is_target_change() else result
 
         return result
     

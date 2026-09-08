@@ -1,5 +1,34 @@
-venv/
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 *.pyc
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
 .env
+
+# VS Code
+.vscode/settings.json.swp
+
+# HA Dev
+/config/
+/config/*.db
+/config*.log
+
+# Auto-generated
+custom_components/pool_esp/translations/en.json
+
+# Mac
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Git
+*.orig
+EOF
+

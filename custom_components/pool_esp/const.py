@@ -1,7 +1,8 @@
 from homeassistant.const import Platform
 
 DOMAIN = "pool_esp"
-SCREENLOGIC_DOMAIN = "screenlogic"
+INTEGRATION_NAME = "Pool ESP"
+MANUFACTURER = "Strebor Tech"
 
 # List of Entity Platforms which the ESP supports
 PLATFORMS: list[Platform] = [
@@ -56,8 +57,9 @@ CONTEXT_SECONDS             = "seconds"         # ESP Seconds Remaining
 CONTEXT_CONFIDENCE_PCT      = "confidence"      # ESP Confidence
 CONTEXT_TIMESTAMP           = "timestamp"       # Current data Timestamp
 CONTEXT_WATER_TEMP          = "water_temp"      # Body Water Temp
-CONTEXT_TARGET_TEMP         = "target_temp"     # Body Target Water Temp
-CONTEXT_AIR_TEMP            = "air_temp"        # Air Temperature
+CONTEXT_TARGET_TEMP         = "target_temp"         # Body Target Water Temp
+CONTEXT_PRIOR_TARGET_TEMP   = "prior_target_temp"   # Body Prior Target Water Temp
+CONTEXT_AIR_TEMP            = "air_temp"            # Air Temperature
 CONTEXT_CHANGES             = "changes"         # Latest Changes
 CONTEXT_CLIMATE_STATUS      = "climate_status"  # Heating Status (idle, heating)
 CONTEXT_CLIMATE_MODE        = "climate_mode"    # Heating Mode (off, heat)
@@ -69,14 +71,23 @@ CONTEXT_HASS                = "hass"            # Home Assistant instance
 CONTEXT_TESTING             = "testing"         # Testing mode
 CONTEXT_EXPORT              = "export"          # Export data
 
-CONF_SHOW_PANEL = "show_sidebar_panel"
+# Integration Options
+CONF_SHOW_PANEL             = "show_sidebar_panel"
+CONF_HEATER_FUEL_TYPE       = "heater_fuel_type"
+CONF_ELECTRIC_HEATER_KW     = "electric_heater_kw"
+CONF_ELECTRIC_COST_PER_KWH  = "electric_cost_per_kwh"
+CONF_GAS_HEATER_BTU         = "gas_heater_btu"
+CONF_GAS_COST_PER_THERM     = "gas_cost_per_therm"
 
-POOL_ADAPTER_CONFIG = "adapter"
+POOL_ADAPTER_CONFIG  = "adapter"
 DEFAULT_POOL_ADAPTER = "screenlogic_adapter"
-POOL_PREFIX   = "pool_prefix"
-POOL_MODEL    = "pool_model"
-POOL_NAME     = "pool_name"
-POOL_ID       = "pool_id"
+POOL_PREFIX          = "prefix"
+POOL_MODEL           = "model"
+POOL_MANUFACTURER    = "manufacturer"
+POOL_NAME            = "name"
+POOL_TECHNOLOGY      = "technology"
+POOL_UNIQUE_ID       = "unique_id"
+POOL_DOMAIN          = "domain"
 
 BODY_TYPE_POOL = "pool"
 BODY_TYPE_SPA = "spa"
@@ -125,6 +136,7 @@ STATUS_LEARNING         = "Learning"        # Insufficent Heat/Air/Water data
 STATUS_HEATING          = "Heating"         # Circuit/Heat is On and Heating
 STATUS_READY            = "Ready"           # Reached Set Point; only occurs once
 STATUS_DISABLED         = "Disabled"        # Heater Disabled
+STATUS_UNKNOWN          = "Unknown"         # No measurements to determine status
 
 
 STATUS_ERROR            = "Error"           # An error has occurred 
@@ -144,3 +156,6 @@ CLIMATE_MODE_SOLAR           = "solar"
 CLIMATE_MODE_SOLAR_PREFERRED = "solar_preferred"
 CLIMATE_STATUS_HEATING       = "heating"
 CLIMATE_STATUS_IDLE          = "idle"
+
+ISSUE_HEATER_PERFORMANCE     = "heater_performance"
+ISSUE_POOL_ADAPTER_VALUE     = "pool_adapter_value"
