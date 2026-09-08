@@ -1,4 +1,5 @@
 # Pool ESP Integration
+<ins>2026 by Strebor Tech</ins>
 
 ## Description
 > **_Dad .. When will the Spa be ready? ??_**
@@ -11,13 +12,13 @@ The HA Recorder purges data after 10 days, thus Pool ESP can only look back that
 
 To provide more useful estimates, Pool ESP maintains heating characteristics in private storage for up to a year. This data is also pruned to alleviate unbounded growth.
 
-Two sensor entities are created by Pool ESP; one for the Pool and one for the Spa. These entities provide the [State of Operation](#states) and additional **Attributes**:
+Two sensor entities are created by Pool ESP; one for the Pool and one for the Spa. These entities provide the [State of Operation](#states-of-operation) and additional **Attributes**:
 
 | Attribute      | Description |
 | -------------- | ----------- |
 | body           | "pool" or "spa" |
 | status         | Off, Sensing, Learning, D-HH:MM, Ready, Standby, Maintaining |
-| seconds        | The number of **Sensing** seconds remaining, or number of seconds until Ready |
+| seconds        | The number of **Sensing** seconds remaining, or number of seconds until **Ready** |
 | confidence_pct | Confidence Percentage; based on the accumulated heating data |
 
 Pool ESP can also estimate your cost of heating based on the heater type (gas, electric), energy usage and cost you provide.
@@ -73,13 +74,13 @@ It's interesting to note: the larger Pool volume is more affected by Air Tempera
 ## Watchdog
 Once Pool ESP understands the heating characteristics it can alert if the heating time exceeds expectations. This FYI notification could be a natural event, such as a very cold day, or indicate there is a heater malfunction which needs investigation.
 
-## States
+## States of Operation
 Pool ESP sensor entities provide the State of Operation:
 
 | Entity State  | Description | Status Attribute |
 | ------------- | ----------- | ---------------- |
 | off         | Water is not being heated | Learning or D-HH:MM |
-| sensing     | Heating; 2 minute delay, waiting for the Water Temperature to stabilize | Sensing |
+| sensing     | Heating; 2 minute delay while waiting for the Water Temperature to stabilize | Sensing |
 | heating     | Actively heating the Water | Learning or D-HH:MM |
 | ready       | Water Temperature has reached the Set Point | Ready |
 | standby     | At Set Point, heating paused | Ready |
@@ -97,12 +98,12 @@ If you *really* want to know how it works ...
 * States **standby** and **maintaining** alternate as the Heater turns on and off to keep the water at temperature.
 
 ## Sample Dashboard
-In this example, the Spa Circuit is off, Heater enabled but not heating. Water is 98°, set to 99°. The ESP State is off (because the Circuit is off) and estimating that if it were turned on, it would take about 5 minutes to heat up.
+In this example, the Spa Circuit is off, Spa Heater disabled. Water is 87°, set to 90°. The ESP State is off (because the Circuit is off) and estimating that <ins>if the Spa were turned on</ins>, it would take about 15 minutes to heat up ... with a 22% confidence based on the amount of data which has been collected.
 
 <img width="644" height="626" alt="image" src="https://github.com/user-attachments/assets/261c4c4c-9284-49cc-8690-d6ef18d20235" />
 
 ## ESP Rate Viewer
-The Pool ESP settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactively delete extraneous values.
+The Pool ESP integration settings (gear icon) has an option to add the Rate Viewer into the Home Assistant Dashboard Sidebar. Pool ESP algorithmically prunes "bad data" over time and the Viewer allows you to proactively delete extraneous values.
 
 ### First Time
 The first time running the ESP Rate Viewer you'll need to provide your Long-lived Access Token.
@@ -116,7 +117,7 @@ The first time running the ESP Rate Viewer you'll need to provide your Long-live
 <img width="949" height="633" alt="image" src="https://github.com/user-attachments/assets/06e874aa-946a-45eb-b084-ab01f22d942a" />
 
 ### Extraneous Values?
-If your heater malfunctions (ie, heat pump fails to start a few times before functioning) _Screenlogic thinks it is heating_ but the heater hasn't started properly, which can cause the rate estimate to be exaggerated. These bogus values will age out over time, or can be manually removed.
+If your heater malfunctions (ie, heat pump fails to start a few times before functioning) <ins>Screenlogic thinks it is heating</ins> but the heater hasn't started properly, which can cause the rate estimate to be exaggerated. These bogus values will age out over time, or can be manually removed.
 
 Click on the Air Temperature bin to open the list of data rates. Check the rates you wish to delete, Click the [Delete Selected] button, then Click [Save to HA]
 

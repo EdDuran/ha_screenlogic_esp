@@ -295,7 +295,7 @@ class ESPCoordinator(DataUpdateCoordinator):
             context.climate_status  = self._get_current_value(config[CLIMATE_STATUS])
             context.circuit         = self._get_current_value(config[CIRCUIT])
             context.sm_state        = cause
-            context.export          = True  # Export history data
+            context.export          = False  # Export history data
 
             ###
             ### Execute State Machine - Bricks save STATUS & ESP in the Context
